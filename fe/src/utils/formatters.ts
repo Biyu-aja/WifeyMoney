@@ -1,12 +1,49 @@
 import type { Transaction, DailySummary } from '../types';
 
 export function formatCurrency(amount: number): string {
+    try {
+        const storedStr = localStorage.getItem('wifey_settings');
+        if (storedStr) {
+            const settings = JSON.parse(storedStr);
+            if (settings.useCompactCurrency) {
+                if (Math.abs(amount) >= 1000000000) return `Rp ${(amount / 1000000000).toFixed(1).replace(/\.0$/, '')}B`;
+                if (Math.abs(amount) >= 1000000) return `Rp ${(amount / 1000000).toFixed(1).replace(/\.0$/, '')}M`;
+                if (Math.abs(amount) >= 1000) return `Rp ${(amount / 1000).toFixed(1).replace(/\.0$/, '')}K`;
+            }
+        }
+    } catch (e) {
+        // ignore storage errors
+    }
+
     return new Intl.NumberFormat('id-ID', {
         style: 'currency',
         currency: 'IDR',
         minimumFractionDigits: 0,
         maximumFractionDigits: 0,
     }).format(amount);
+}
+
+export function parseAmountInput(value: string): { display: string; numeric: number } {
+    if (!value) return { display: '', numeric: 0 };
+
+    let raw = value.toLowerCase();
+
+    // Check for suffix
+    if (raw.endsWith('k')) {
+        raw = raw.replace('k', '') + '000';
+    } else if (raw.endsWith('m') || raw.endsWith('jt')) {
+        raw = raw.replace(/m|jt/, '') + '000000';
+    } else if (raw.endsWith('b')) {
+        raw = raw.replace('b', '') + '000000000';
+    }
+
+    const numericStr = raw.replace(/\D/g, '');
+    if (!numericStr) return { display: '', numeric: 0 };
+
+    const numeric = parseInt(numericStr, 10);
+    const display = new Intl.NumberFormat('id-ID').format(numeric);
+
+    return { display, numeric };
 }
 
 export function formatDate(dateStr: string): string {

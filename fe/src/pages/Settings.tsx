@@ -3,9 +3,11 @@ import { Save, User, Wallet, Trash2 } from 'lucide-react';
 import { storage } from '../utils/storage';
 import type { UserSettings } from '../types';
 import { formatCurrency } from '../utils/formatters';
+import CurrencyInput from '../components/CurrencyInput';
 
 export default function Settings() {
   const [settings, setSettings] = useState<UserSettings>(storage.getSettings());
+
   const [saved, setSaved] = useState(false);
 
   const handleSave = () => {
@@ -59,11 +61,10 @@ export default function Settings() {
           </div>
 
           <div className="mb-3">
-            <label className="text-xs text-dark-muted font-medium mb-2 block">Jumlah Budget (Rp)</label>
-            <input
-              type="number"
+            <CurrencyInput
+              label="Jumlah Budget (Rp)"
               value={settings.monthlyBudget}
-              onChange={e => setSettings({ ...settings, monthlyBudget: parseFloat(e.target.value) || 0 })}
+              onChange={val => setSettings({ ...settings, monthlyBudget: val })}
               className="w-full bg-dark/50 border border-dark-border rounded-2xl px-4 py-3 text-dark-text focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition"
             />
           </div>
@@ -82,6 +83,22 @@ export default function Settings() {
                 {formatCurrency(b)}
               </button>
             ))}
+          </div>
+        </div>
+
+        {/* Display Settings */}
+        <div className="gradient-card rounded-2xl p-5 border border-dark-border/50">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold">Format Uang Singkat</h3>
+              <p className="text-xs text-dark-muted mt-1">Tampilkan Rp1.000.000 sebagai Rp1M</p>
+            </div>
+            <button
+              onClick={() => setSettings({ ...settings, useCompactCurrency: !settings.useCompactCurrency })}
+              className={`w-12 h-6 rounded-full transition-colors relative ${settings.useCompactCurrency ? 'bg-primary' : 'bg-dark-border'}`}
+            >
+              <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${settings.useCompactCurrency ? 'left-7' : 'left-1'}`} />
+            </button>
           </div>
         </div>
 

@@ -1,3 +1,5 @@
+
+
 import { Router, Request, Response } from 'express';
 
 const router = Router();
@@ -22,32 +24,32 @@ function buildPrompt(data: FinancialData): string {
         .join('\n');
 
     const characterInstruction = data.characterPrompt
-        ? `KARAKTER: Kamu berperan sebagai "${data.characterName}". ${data.characterPrompt}`
-        : 'Kamu adalah AI roaster keuangan yang savage tapi tetap lucu dan membantu. Kamu harus merespons dalam bahasa Indonesia gaul/slang.';
+        ? `CHARACTER PERSONA: You are acting as "${data.characterName}". ${data.characterPrompt}\nYou MUST consistently stay in character for your entire response, but answer in Indonesian slang.`
+        : 'You are a funny and helpful financial AI commentator. You must respond in Indonesian slang/informal language.';
 
     return `${characterInstruction}
 
-Berikut data keuangan user bernama "${data.name}" bulan ini:
-- Budget bulanan: Rp${data.monthlyBudget.toLocaleString('id-ID')}
-- Total pemasukan: Rp${data.totalIncome.toLocaleString('id-ID')}
-- Total pengeluaran: Rp${data.totalExpense.toLocaleString('id-ID')}
-- Sisa saldo: Rp${data.balance.toLocaleString('id-ID')}
-- Budget terpakai: ${data.budgetUsedPercent}%
-- Jumlah transaksi: ${data.transactionCount}
-- Rata-rata pengeluaran harian: Rp${data.avgDailyExpense.toLocaleString('id-ID')}
+Here is the financial data for the user named "${data.name}" this month:
+- Monthly budget: Rp${data.monthlyBudget.toLocaleString('id-ID')}
+- Total income: Rp${data.totalIncome.toLocaleString('id-ID')}
+- Total expenses: Rp${data.totalExpense.toLocaleString('id-ID')}
+- Remaining balance: Rp${data.balance.toLocaleString('id-ID')}
+- Budget used: ${data.budgetUsedPercent}%
+- Transaction count: ${data.transactionCount}
+- Average daily expense: Rp${data.avgDailyExpense.toLocaleString('id-ID')}
 
-Top kategori pengeluaran:
+Top expense categories:
 ${topCatStr}
 
-Tugasmu:
-1. Berikan ROAST yang savage, lucu, dan nyelekit tentang kebiasaan keuangan mereka (3-5 kalimat). WAJIB sesuai gaya karakter di atas! Bisa pakai emoji. Jadikan personal dan spesifik berdasarkan data. Jangan generic!
-2. Berikan 3-4 tips keuangan yang actionable dan relevan, tetap dengan gaya karakter.
-3. Berikan skor kesehatan keuangan 1-100.
-4. Berikan 1 emoji yang paling menggambarkan kondisi keuangan mereka.
+Your tasks:
+1. Provide a funny, entertaining, and slightly teasing commentary (3-5 sentences) about their financial habits. You MUST strictly follow your character's persona and speaking style! Use emojis. Make it personal and specific based on the numbers above. Do not use formal Indonesian! Respond in Indonesian.
+2. Provide 3-4 actionable and relevant financial tips, continuing to speak in your character's persona (in Indonesian).
+3. Give them a financial health score from 1 to 100.
+4. Give 1 single emoji that best describes their financial condition.
 
-PENTING: Respond HANYA dalam format JSON valid berikut, tanpa markdown code block:
+CRITICAL: You MUST respond ONLY with the following valid JSON format, without any markdown code blocks:
 {
-  "roast": "teks roast di sini",
+  "roast": "your commentary text here",
   "tips": ["tip 1", "tip 2", "tip 3"],
   "score": 50,
   "emoji": "💸"
@@ -86,7 +88,8 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
                     { role: 'user', content: prompt },
                 ],
                 temperature: 0.9,
-                max_tokens: 1024,
+                max_tokens: 2500,
+                max_completion_tokens: 2500,
             }),
         });
 
@@ -97,9 +100,19 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
             return;
         }
 
-        const aiResponse = await response.json() as { choices?: { message?: { content?: string } }[] };
-        const content = aiResponse.choices?.[0]?.message?.content || '';
+        const aiResponse = await response.json() as any;
 
+        // Log the full response to debug safety filter blocks
+        console.log('--- AI Response Data ---');
+        console.log(JSON.stringify(aiResponse, null, 2));
+        console.log('------------------------');
+
+        const choice = aiResponse.choices?.[0];
+        if (choice?.finish_reason === 'content_filter' || choice?.finish_reason === 'safety') {
+            console.warn('⚠️ WARNING: Response blocked by AI safety filter!');
+        }
+
+        const content = choice?.message?.content || '';
         // Parse JSON from response (handle potential markdown wrapping)
         let cleaned = content.trim();
         if (cleaned.startsWith('```')) {

@@ -33,6 +33,7 @@ export const storage = {
             name: 'Sayang',
             monthlyBudget: 5000000,
             currency: 'IDR',
+            useCompactCurrency: false,
         };
     },
 

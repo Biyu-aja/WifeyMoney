@@ -3,6 +3,7 @@ import { X, TrendingUp, TrendingDown } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import type { Transaction, TransactionType, Category } from '../types';
 import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '../types';
+import CurrencyInput from './CurrencyInput';
 
 interface Props {
   isOpen: boolean;
@@ -12,7 +13,7 @@ interface Props {
 
 export default function TransactionForm({ isOpen, onClose, onSave }: Props) {
   const [type, setType] = useState<TransactionType>('expense');
-  const [amount, setAmount] = useState('');
+  const [amount, setAmount] = useState(0);
   const [category, setCategory] = useState<Category | ''>('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -25,7 +26,7 @@ export default function TransactionForm({ isOpen, onClose, onSave }: Props) {
     const transaction: Transaction = {
       id: uuidv4(),
       type,
-      amount: parseFloat(amount),
+      amount,
       category: category as Category,
       description: description || categories.find(c => c.value === category)?.label || '',
       date,
@@ -38,7 +39,7 @@ export default function TransactionForm({ isOpen, onClose, onSave }: Props) {
   };
 
   const resetForm = () => {
-    setAmount('');
+    setAmount(0);
     setCategory('');
     setDescription('');
     setType('expense');
@@ -101,16 +102,12 @@ export default function TransactionForm({ isOpen, onClose, onSave }: Props) {
           </div>
 
           {/* Amount */}
-          <div>
-            <label className="text-xs text-dark-muted font-medium mb-2 block">Jumlah (Rp)</label>
-            <input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="0"
-              className="w-full bg-dark/50 border border-dark-border rounded-2xl px-4 py-4 text-2xl font-bold text-dark-text placeholder:text-dark-muted/40 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition"
-            />
-          </div>
+          <CurrencyInput
+            label="Jumlah (Rp)"
+            value={amount}
+            onChange={setAmount}
+            className="w-full bg-dark/50 border border-dark-border rounded-2xl px-4 py-4 text-2xl font-bold text-dark-text placeholder:text-dark-muted/40 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition"
+          />
 
           {/* Date */}
           <div>
