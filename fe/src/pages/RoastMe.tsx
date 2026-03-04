@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Flame, Sparkles, RefreshCw, TrendingDown, AlertTriangle, Heart } from 'lucide-react';
+import { Flame, Sparkles, RefreshCw, TrendingDown, AlertTriangle, Heart, Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import type { Transaction } from '../types';
+import type { Character } from '../types/character';
+import { DEFAULT_CHARACTERS } from '../types/character';
 import { storage } from '../utils/storage';
+import { characterStorage } from '../utils/opfs';
 import {
   formatCurrency,
   getCurrentMonth,
@@ -10,6 +13,8 @@ import {
   getCategoryTotals,
 } from '../utils/formatters';
 import { getCategoryInfo } from '../types';
+import CharacterCard from '../components/CharacterCard';
+import CharacterForm from '../components/CharacterForm';
 
 interface RoastResult {
   roast: string;
@@ -23,10 +28,22 @@ export default function RoastMe() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<RoastResult | null>(null);
   const [error, setError] = useState('');
+  const [characters, setCharacters] = useState<Character[]>(DEFAULT_CHARACTERS);
+  const [selectedCharId, setSelectedCharId] = useState(characterStorage.getSelectedId());
+  const [showCharacters, setShowCharacters] = useState(true);
+  const [showCharForm, setShowCharForm] = useState(false);
 
   useEffect(() => {
     setTransactions(storage.getTransactions());
+    loadCharacters();
   }, []);
+
+  const loadCharacters = async () => {
+    const all = await characterStorage.getAll();
+    setCharacters(all);
+  };
+
+  const selectedChar = characters.find(c => c.id === selectedCharId) || characters[0];
 
   const currentMonth = getCurrentMonth();
   const monthTx = filterByMonth(transactions, currentMonth);
@@ -34,6 +51,20 @@ export default function RoastMe() {
   const { income, expense, balance } = calculateSummary(monthTx);
   const categoryTotals = getCategoryTotals(expenses);
   const settings = storage.getSettings();
+
+  const handleSelectChar = (id: string) => {
+    setSelectedCharId(id);
+    characterStorage.setSelectedId(id);
+  };
+
+  const handleDeleteChar = async (id: string) => {
+    await characterStorage.delete(id);
+    if (selectedCharId === id) {
+      setSelectedCharId('gen-z');
+      characterStorage.setSelectedId('gen-z');
+    }
+    await loadCharacters();
+  };
 
   const handleRoast = async () => {
     if (monthTx.length === 0) {
@@ -60,6 +91,9 @@ export default function RoastMe() {
         })),
         transactionCount: monthTx.length,
         avgDailyExpense: Math.round(expense / new Date().getDate()),
+        // Character info
+        characterName: selectedChar.name,
+        characterPrompt: selectedChar.promptStyle,
       };
 
       const response = await fetch('/api/roast', {
@@ -102,7 +136,47 @@ export default function RoastMe() {
           <Flame className="text-accent" size={24} />
           AI Roast
         </h1>
-        <p className="text-dark-muted text-xs mt-0.5">Siap mental? AI bakal nge-roast keuanganmu! 🔥</p>
+        <p className="text-dark-muted text-xs mt-0.5">Pilih karakter, lalu siap mental di-roast! 🔥</p>
+      </div>
+
+      {/* Character Selection */}
+      <div className="px-5 mb-5">
+        <button
+          onClick={() => setShowCharacters(!showCharacters)}
+          className="flex items-center justify-between w-full mb-3"
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-lg">{selectedChar.avatar.length <= 4 ? selectedChar.avatar : '🎭'}</span>
+            <div>
+              <h3 className="text-sm font-semibold text-left">Roaster: {selectedChar.name}</h3>
+              <p className="text-[10px] text-dark-muted text-left">{selectedChar.personality}</p>
+            </div>
+          </div>
+          {showCharacters ? <ChevronUp size={16} className="text-dark-muted" /> : <ChevronDown size={16} className="text-dark-muted" />}
+        </button>
+
+        {showCharacters && (
+          <div className="space-y-2 animate-slide-down">
+            {characters.map(char => (
+              <CharacterCard
+                key={char.id}
+                character={char}
+                isSelected={selectedCharId === char.id}
+                onSelect={handleSelectChar}
+                onDelete={!char.isDefault ? handleDeleteChar : undefined}
+              />
+            ))}
+
+            {/* Add Custom Character */}
+            <button
+              onClick={() => setShowCharForm(true)}
+              className="w-full p-4 rounded-2xl border-2 border-dashed border-dark-border/50 hover:border-primary/50 transition-all flex items-center justify-center gap-2 text-dark-muted hover:text-primary-light"
+            >
+              <Plus size={18} />
+              <span className="text-sm font-medium">Buat Karakter Baru</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Quick Stats */}
@@ -162,12 +236,12 @@ export default function RoastMe() {
           {loading ? (
             <>
               <RefreshCw size={20} className="animate-spin" />
-              AI lagi mikir...
+              {selectedChar.name} lagi mikir...
             </>
           ) : (
             <>
               <Flame size={20} />
-              🔥 ROAST KEUANGANKU! 🔥
+              🔥 ROAST oleh {selectedChar.name}! 🔥
             </>
           )}
         </button>
@@ -186,20 +260,23 @@ export default function RoastMe() {
       {/* Result */}
       {result && (
         <div className="px-5 space-y-4 animate-slide-up">
-          {/* Score */}
+          {/* Character + Score */}
           <div className="gradient-card rounded-2xl p-5 border border-dark-border/50 text-center">
             <p className="text-5xl mb-2">{result.emoji}</p>
             <p className={`text-4xl font-display font-black ${getScoreColor(result.score)}`}>
               {result.score}/100
             </p>
             <p className="text-sm text-dark-muted mt-1">{getScoreLabel(result.score)}</p>
+            <p className="text-xs mt-2" style={{ color: selectedChar.color }}>
+              — di-roast oleh {selectedChar.name} {selectedChar.avatar.length <= 4 ? selectedChar.avatar : ''}
+            </p>
           </div>
 
           {/* Roast Text */}
           <div className="gradient-card rounded-2xl p-5 border border-dark-border/50">
             <div className="flex items-center gap-2 mb-3">
               <Flame size={16} className="text-accent" />
-              <h3 className="text-sm font-semibold">Roast 🔥</h3>
+              <h3 className="text-sm font-semibold">Roast dari {selectedChar.name} 🔥</h3>
             </div>
             <p className="text-sm text-dark-text leading-relaxed whitespace-pre-line">
               {result.roast}
@@ -242,9 +319,14 @@ export default function RoastMe() {
         <div className="px-5">
           <div className="text-center py-8">
             <div className="text-6xl mb-4 animate-float">🔥</div>
-            <p className="text-dark-muted text-sm mb-1">AI akan menganalisis pengeluaranmu</p>
-            <p className="text-dark-muted/60 text-xs">dan memberikan roast + saran keuangan</p>
+            <p className="text-dark-muted text-sm mb-1">Pilih karakter lalu tekan tombol roast</p>
+            <p className="text-dark-muted/60 text-xs">AI akan nge-roast sesuai gaya karakter yang dipilih</p>
             <div className="flex items-center justify-center gap-4 mt-6 text-dark-muted/40">
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-lg">🎭</span>
+                <span className="text-[10px]">Pilih</span>
+              </div>
+              <span>→</span>
               <div className="flex flex-col items-center gap-1">
                 <TrendingDown size={20} />
                 <span className="text-[10px]">Analisa</span>
@@ -263,6 +345,13 @@ export default function RoastMe() {
           </div>
         </div>
       )}
+
+      {/* Character Form Modal */}
+      <CharacterForm
+        isOpen={showCharForm}
+        onClose={() => setShowCharForm(false)}
+        onSaved={loadCharacters}
+      />
     </div>
   );
 }

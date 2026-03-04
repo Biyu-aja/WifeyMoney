@@ -12,6 +12,8 @@ interface FinancialData {
     topCategories: { category: string; amount: number; percent: number }[];
     transactionCount: number;
     avgDailyExpense: number;
+    characterName?: string;
+    characterPrompt?: string;
 }
 
 function buildPrompt(data: FinancialData): string {
@@ -19,7 +21,11 @@ function buildPrompt(data: FinancialData): string {
         .map(c => `- ${c.category}: Rp${c.amount.toLocaleString('id-ID')} (${c.percent}%)`)
         .join('\n');
 
-    return `Kamu adalah AI roaster keuangan yang savage tapi tetap lucu dan membantu. Kamu harus merespons dalam bahasa Indonesia gaul/slang.
+    const characterInstruction = data.characterPrompt
+        ? `KARAKTER: Kamu berperan sebagai "${data.characterName}". ${data.characterPrompt}`
+        : 'Kamu adalah AI roaster keuangan yang savage tapi tetap lucu dan membantu. Kamu harus merespons dalam bahasa Indonesia gaul/slang.';
+
+    return `${characterInstruction}
 
 Berikut data keuangan user bernama "${data.name}" bulan ini:
 - Budget bulanan: Rp${data.monthlyBudget.toLocaleString('id-ID')}
@@ -34,8 +40,8 @@ Top kategori pengeluaran:
 ${topCatStr}
 
 Tugasmu:
-1. Berikan ROAST yang savage, lucu, dan nyelekit tentang kebiasaan keuangan mereka (3-5 kalimat). Gunakan bahasa gaul Indonesia, bisa pakai emoji. Jadikan personal dan spesifik berdasarkan data di atas. Jangan generic!
-2. Berikan 3-4 tips keuangan yang actionable dan relevan berdasarkan pola pengeluaran mereka.
+1. Berikan ROAST yang savage, lucu, dan nyelekit tentang kebiasaan keuangan mereka (3-5 kalimat). WAJIB sesuai gaya karakter di atas! Bisa pakai emoji. Jadikan personal dan spesifik berdasarkan data. Jangan generic!
+2. Berikan 3-4 tips keuangan yang actionable dan relevan, tetap dengan gaya karakter.
 3. Berikan skor kesehatan keuangan 1-100.
 4. Berikan 1 emoji yang paling menggambarkan kondisi keuangan mereka.
 
