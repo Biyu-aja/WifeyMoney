@@ -14,6 +14,7 @@ import {
 } from '../utils/formatters';
 import TransactionForm from '../components/TransactionForm';
 import TransactionCard from '../components/TransactionCard';
+import DashboardCharacter from '../components/DashboardCharacter';
 
 export default function Dashboard() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -182,6 +183,8 @@ export default function Dashboard() {
         onClose={() => setShowForm(false)}
         onSave={handleSave}
       />
+
+      <DashboardCharacter />
     </div>
   );
 }

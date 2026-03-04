@@ -16,6 +16,7 @@ interface FinancialData {
     avgDailyExpense: number;
     characterName?: string;
     characterPrompt?: string;
+    recentTransactions?: { description: string; amount: number; category: string }[];
 }
 
 function buildPrompt(data: FinancialData): string {
@@ -26,6 +27,10 @@ function buildPrompt(data: FinancialData): string {
     const characterInstruction = data.characterPrompt
         ? `CHARACTER PERSONA: You are acting as "${data.characterName}". ${data.characterPrompt}\nYou MUST consistently stay in character for your entire response, but answer in Indonesian slang.`
         : 'You are a funny and helpful financial AI commentator. You must respond in Indonesian slang/informal language.';
+
+    const recentTxStr = data.recentTransactions && data.recentTransactions.length > 0
+        ? `\n\nRecent Expenses:\n${data.recentTransactions.map(t => `- ${t.description} (Rp${t.amount.toLocaleString('id-ID')})`).join('\n')}`
+        : '';
 
     return `${characterInstruction}
 
@@ -39,7 +44,7 @@ Here is the financial data for the user named "${data.name}" this month:
 - Average daily expense: Rp${data.avgDailyExpense.toLocaleString('id-ID')}
 
 Top expense categories:
-${topCatStr}
+${topCatStr}${recentTxStr}
 
 Your tasks:
 1. Provide a funny, entertaining, and slightly teasing commentary (3-5 sentences) about their financial habits. You MUST strictly follow your character's persona and speaking style! Use emojis. Make it personal and specific based on the numbers above. Do not use formal Indonesian! Respond in Indonesian.

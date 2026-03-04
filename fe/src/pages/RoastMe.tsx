@@ -33,6 +33,7 @@ export default function RoastMe() {
   const [selectedCharAvatarUrl, setSelectedCharAvatarUrl] = useState<string | null>(null);
   const [showCharacters, setShowCharacters] = useState(true);
   const [showCharForm, setShowCharForm] = useState(false);
+  const [characterToEdit, setCharacterToEdit] = useState<Character | undefined>(undefined);
 
   useEffect(() => {
     setTransactions(storage.getTransactions());
@@ -88,6 +89,12 @@ export default function RoastMe() {
     setResult(null);
 
     try {
+        const recentTransactions = monthTx
+          .filter(t => t.type === 'expense')
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+          .slice(0, 5)
+          .map(t => ({ description: t.description, amount: t.amount, category: getCategoryInfo(t.category as any).label }));
+
       const summaryData = {
         name: settings.name,
         monthlyBudget: settings.monthlyBudget,
@@ -105,6 +112,7 @@ export default function RoastMe() {
         // Character info
         characterName: selectedChar.name,
         characterPrompt: selectedChar.promptStyle,
+        recentTransactions,
       };
 
       const response = await fetch('/api/roast', {
@@ -181,12 +189,13 @@ export default function RoastMe() {
                 isSelected={selectedCharId === char.id}
                 onSelect={handleSelectChar}
                 onDelete={!char.isDefault ? handleDeleteChar : undefined}
+                onEdit={!char.isDefault ? (c) => { setCharacterToEdit(c); setShowCharForm(true); } : undefined}
               />
             ))}
 
             {/* Add Custom Character */}
             <button
-              onClick={() => setShowCharForm(true)}
+              onClick={() => { setCharacterToEdit(undefined); setShowCharForm(true); }}
               className="w-full p-4 rounded-2xl border-2 border-dashed border-dark-border/50 hover:border-primary/50 transition-all flex items-center justify-center gap-2 text-dark-muted hover:text-primary-light"
             >
               <Plus size={18} />
@@ -366,8 +375,9 @@ export default function RoastMe() {
       {/* Character Form Modal */}
       <CharacterForm
         isOpen={showCharForm}
-        onClose={() => setShowCharForm(false)}
+        onClose={() => { setShowCharForm(false); setCharacterToEdit(undefined); }}
         onSaved={loadCharacters}
+        initialData={characterToEdit}
       />
     </div>
   );

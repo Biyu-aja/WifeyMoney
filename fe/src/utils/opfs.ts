@@ -62,12 +62,12 @@ export const characterStorage = {
     /**
      * Save avatar image to OPFS, returns the stored file name
      */
-    async saveAvatar(characterId: string, file: File): Promise<string> {
+    async saveAvatar(characterId: string, file: File, suffix: string = ''): Promise<string> {
         const dir = await getDir();
         const avatarsDir = await dir.getDirectoryHandle('avatars', { create: true });
 
         const ext = file.name.split('.').pop() || 'png';
-        const fileName = `${characterId}.${ext}`;
+        const fileName = suffix ? `${characterId}_${suffix}.${ext}` : `${characterId}.${ext}`;
 
         const fileHandle = await avatarsDir.getFileHandle(fileName, { create: true });
         const writable = await fileHandle.createWritable();
