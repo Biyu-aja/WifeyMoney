@@ -34,6 +34,7 @@ export const storage = {
             monthlyBudget: 5000000,
             currency: 'IDR',
             useCompactCurrency: false,
+            useBudget: true,
         };
     },
 

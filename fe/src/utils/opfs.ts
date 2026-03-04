@@ -135,4 +135,18 @@ export const characterStorage = {
     setSelectedId(id: string): void {
         localStorage.setItem('wifey_selected_character', id);
     },
+
+    /**
+     * Clear all custom characters and avatars
+     */
+    async clearAll(): Promise<void> {
+        await writeMetaFile([]);
+        try {
+            const dir = await getDir();
+            await dir.removeEntry('avatars', { recursive: true });
+        } catch {
+            // Ignore if directory doesn't exist
+        }
+        localStorage.removeItem('wifey_selected_character');
+    },
 };

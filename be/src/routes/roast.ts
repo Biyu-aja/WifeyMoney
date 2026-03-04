@@ -11,12 +11,13 @@ interface FinancialData {
     totalExpense: number;
     balance: number;
     budgetUsedPercent: number;
+    hasBudget?: boolean;
     topCategories: { category: string; amount: number; percent: number }[];
     transactionCount: number;
     avgDailyExpense: number;
     characterName?: string;
     characterPrompt?: string;
-    recentTransactions?: { description: string; amount: number; category: string }[];
+    recentTransactions?: { description: string; amount: number; category: string; type?: string; date?: string }[];
 }
 
 function buildPrompt(data: FinancialData): string {
@@ -29,17 +30,21 @@ function buildPrompt(data: FinancialData): string {
         : 'You are a funny and helpful financial AI commentator. You must respond in Indonesian slang/informal language.';
 
     const recentTxStr = data.recentTransactions && data.recentTransactions.length > 0
-        ? `\n\nRecent Expenses:\n${data.recentTransactions.map(t => `- ${t.description} (Rp${t.amount.toLocaleString('id-ID')})`).join('\n')}`
+        ? `\n\nRecent Transactions (Chronological Order, most recent first):\n${data.recentTransactions.map(t => {
+            const dateStr = t.date ? new Date(t.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+            return `- [${t.type === 'income' ? 'INCOME' : 'EXPENSE'}] ${t.description} (Rp${t.amount.toLocaleString('id-ID')}) on ${dateStr}`;
+        }).join('\n')}`
         : '';
 
     return `${characterInstruction}
 
 Here is the financial data for the user named "${data.name}" this month:
-- Monthly budget: Rp${data.monthlyBudget.toLocaleString('id-ID')}
 - Total income: Rp${data.totalIncome.toLocaleString('id-ID')}
 - Total expenses: Rp${data.totalExpense.toLocaleString('id-ID')}
 - Remaining balance: Rp${data.balance.toLocaleString('id-ID')}
-- Budget used: ${data.budgetUsedPercent}%
+${data.hasBudget !== false
+            ? `- Total Monthly Budget Setting: Rp${data.monthlyBudget.toLocaleString('id-ID')}\n- Preset Budget Used: ${data.budgetUsedPercent}%`
+            : `- Total Income Used: ${data.budgetUsedPercent}% (User does not play by a strict numerical budget)`}
 - Transaction count: ${data.transactionCount}
 - Average daily expense: Rp${data.avgDailyExpense.toLocaleString('id-ID')}
 
@@ -47,7 +52,8 @@ Top expense categories:
 ${topCatStr}${recentTxStr}
 
 Your tasks:
-1. Provide a funny, entertaining, and slightly teasing commentary (3-5 sentences) about their financial habits. You MUST strictly follow your character's persona and speaking style! Use emojis. Make it personal and specific based on the numbers above. Do not use formal Indonesian! Respond in Indonesian.
+1. Provide a funny and entertaining commentary (3-5 sentences) about their financial habits. You MUST strictly follow your character's persona and speaking style! Use emojis. Make it personal and specific based on the numbers above. Do not use formal Indonesian!
+CRITICAL RULE: If their financial data is good (e.g. huge income, high savings, low expenses), you MUST PRAISE them instead of teasing. ONLY "roast" or tease them if they are wasting money or their expenses are bad.
 2. Provide 3-4 actionable and relevant financial tips, continuing to speak in your character's persona (in Indonesian).
 3. Give them a financial health score from 1 to 100.
 4. Give 1 single emoji that best describes their financial condition.

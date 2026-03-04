@@ -21,6 +21,13 @@ app.get('/api/health', (_req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Root endpoint for Vercel
+app.get('/', (_req, res) => {
+    res.send('🔥 WifeyMoney Backend API is running perfectly!');
+});
+
 app.listen(PORT, () => {
     console.log(`🔥 WifeyMoney Backend running on port ${PORT}`);
 });
+
+export default app;

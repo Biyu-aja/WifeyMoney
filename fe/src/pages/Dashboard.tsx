@@ -90,30 +90,32 @@ export default function Dashboard() {
       </div>
 
       {/* Budget Progress */}
-      <div className="px-5 mb-5">
-        <div className="gradient-card rounded-2xl p-4 border border-dark-border/50">
-          <div className="flex justify-between items-center mb-2">
-            <div className="flex items-center gap-2">
-              <Wallet size={16} className="text-primary-light" />
-              <span className="text-sm font-medium">Budget Bulanan</span>
+      {settings.useBudget !== false && (
+        <div className="px-5 mb-5">
+          <div className="gradient-card rounded-2xl p-4 border border-dark-border/50">
+            <div className="flex justify-between items-center mb-2">
+              <div className="flex items-center gap-2">
+                <Wallet size={16} className="text-primary-light" />
+                <span className="text-sm font-medium">Budget Bulanan</span>
+              </div>
+              <span className={`text-xs font-bold ${budgetUsed > 80 ? 'text-danger' : budgetUsed > 50 ? 'text-warning' : 'text-success'}`}>
+                {budgetUsed}%
+              </span>
             </div>
-            <span className={`text-xs font-bold ${budgetUsed > 80 ? 'text-danger' : budgetUsed > 50 ? 'text-warning' : 'text-success'}`}>
-              {budgetUsed}%
-            </span>
+            <div className="h-2 bg-dark/50 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-700 ${
+                  budgetUsed > 80 ? 'gradient-danger' : budgetUsed > 50 ? 'bg-warning' : 'gradient-success'
+                }`}
+                style={{ width: `${Math.min(budgetUsed, 100)}%` }}
+              />
+            </div>
+            <p className="text-xs text-dark-muted mt-2">
+              {formatCurrency(expense)} dari {formatCurrency(settings.monthlyBudget)}
+            </p>
           </div>
-          <div className="h-2 bg-dark/50 rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-700 ${
-                budgetUsed > 80 ? 'gradient-danger' : budgetUsed > 50 ? 'bg-warning' : 'gradient-success'
-              }`}
-              style={{ width: `${Math.min(budgetUsed, 100)}%` }}
-            />
-          </div>
-          <p className="text-xs text-dark-muted mt-2">
-            {formatCurrency(expense)} dari {formatCurrency(settings.monthlyBudget)}
-          </p>
         </div>
-      </div>
+      )}
 
       {/* Mini Chart */}
       <div className="px-5 mb-5">

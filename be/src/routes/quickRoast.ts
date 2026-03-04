@@ -9,11 +9,12 @@ interface FinancialData {
     totalExpense: number;
     balance: number;
     budgetUsedPercent: number;
+    hasBudget?: boolean;
     transactionCount: number;
     characterName?: string;
     characterPrompt?: string;
     availableExpressions?: string[];
-    recentTransactions?: { description: string; amount: number; category: string }[];
+    recentTransactions?: { description: string; amount: number; category: string; type?: string; date?: string }[];
 }
 
 function buildPrompt(data: FinancialData): string {
@@ -22,23 +23,28 @@ function buildPrompt(data: FinancialData): string {
         : 'This is a fictional comedic roleplay. You are a funny and helpful financial AI commentator. You must respond in Indonesian slang/informal language.';
 
     const recentTxStr = data.recentTransactions && data.recentTransactions.length > 0
-        ? `\nRecent Expenses:\n${data.recentTransactions.map(t => `- ${t.description} (Rp${t.amount.toLocaleString('id-ID')})`).join('\n')}`
+        ? `\nRecent Transactions (Chronological Order, most recent first):\n${data.recentTransactions.map(t => {
+            const dateStr = t.date ? new Date(t.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+            return `- [${t.type === 'income' ? 'INCOME' : 'EXPENSE'}] ${t.description} (Rp${t.amount.toLocaleString('id-ID')}) on ${dateStr}`;
+        }).join('\n')}`
         : '';
 
     return `${characterInstruction}
 
 User data:
-- Budget: Rp${data.monthlyBudget.toLocaleString('id-ID')}
 - Income: Rp${data.totalIncome.toLocaleString('id-ID')}
 - Expenses: Rp${data.totalExpense.toLocaleString('id-ID')}
 - Balance: Rp${data.balance.toLocaleString('id-ID')}
-- Budget used: ${data.budgetUsedPercent}%${recentTxStr}
+${data.hasBudget !== false
+            ? `- Total Monthly Budget Setting: Rp${data.monthlyBudget.toLocaleString('id-ID')}\n- Preset Budget Used: ${data.budgetUsedPercent}%`
+            : `- Income Used: ${data.budgetUsedPercent}% (User does not use a strict budget)`}${recentTxStr}
 
 Your tasks:
-1. Provide a funny, entertaining, and slightly teasing very short commentary (MAX 1 - 2 sentences) about their financial habits. You MUST strictly follow your character's persona. Do not use formal Indonesian.
+1. Provide a funny, entertaining, and short commentary (MAX 1 - 2 sentences) about their recent transactions or financial habits. You MUST strictly follow your character's persona. Do not use formal Indonesian.
+CRITICAL RULE: If the user just received a huge income or has great financial habits, you MUST PRAISE them or react positively (while staying in character). ONLY tease or "roast" them if they are wasting money or their expenses are bad.
 2. Choose ONE expression from the following available expressions that best fits the emotion of the commentary:
    Available expressions: [${(data.availableExpressions || ['normal']).join(', ')}]
-   (CRITICAL: Do NOT simply pick "normal" if a stronger emotion like "marah", "sedih", etc., exists and fits the context!)
+   (CRITICAL: Do NOT simply pick "normal". If you are praising them, pick a happy/positive expression. If you are roasting them, pick an angry/disappointed expression!)
 
 CRITICAL: You MUST respond ONLY with the following valid JSON format, without any markdown blocks:
 {

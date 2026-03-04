@@ -56,10 +56,14 @@ export default function DashboardCharacter() {
         const { income, expense, balance } = calculateSummary(monthTx);
 
         const recentTransactions = monthTx
-            .filter(t => t.type === 'expense')
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
             .slice(0, 5)
-            .map(t => ({ description: t.description, amount: t.amount, category: getCategoryInfo(t.category as any).label }));
+            .map(t => ({ description: t.description, amount: t.amount, type: t.type, date: t.date, category: getCategoryInfo(t.category as any).label }));
+
+        const hasBudget = settings.useBudget !== false;
+        const budgetUsedPercent = hasBudget
+            ? (settings.monthlyBudget > 0 ? Math.round((expense / settings.monthlyBudget) * 100) : 0)
+            : (income > 0 ? Math.round((expense / income) * 100) : 0);
 
         const summaryData = {
             name: settings.name,
@@ -67,7 +71,8 @@ export default function DashboardCharacter() {
             totalIncome: income,
             totalExpense: expense,
             balance,
-            budgetUsedPercent: settings.monthlyBudget > 0 ? Math.round((expense / settings.monthlyBudget) * 100) : 0,
+            budgetUsedPercent,
+            hasBudget,
             transactionCount: monthTx.length,
             characterName: character.name,
             characterPrompt: character.promptStyle,
