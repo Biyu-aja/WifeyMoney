@@ -115,7 +115,8 @@ export default function RoastMe() {
         recentTransactions,
       };
 
-      const response = await fetch('/api/roast', {
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      const response = await fetch(`${apiUrl}/api/roast`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(summaryData),
