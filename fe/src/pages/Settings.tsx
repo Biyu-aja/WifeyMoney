@@ -19,19 +19,25 @@ export default function Settings() {
   };
 
   const handleClearTransactions = () => {
-    storage.saveTransactions([]);
-    window.location.reload();
+    if (window.confirm('Yakin ingin menghapus semua riwayat transaksi bulanan? Saldo akan direset ke 0! Data tidak bisa dikembalikan.')) {
+        storage.saveTransactions([]);
+        window.location.reload();
+    }
   };
 
   const handleClearCharacters = async () => {
-    await characterStorage.clearAll();
-    window.location.reload();
+    if (window.confirm('Yakin ingin menghapus semua karakter custom AI dan fotonya? Aplikasi akan mengembalikannya ke bawaan.')) {
+        await characterStorage.clearAll();
+        window.location.reload();
+    }
   };
 
   const handleClearAll = async () => {
-    storage.saveTransactions([]);
-    await characterStorage.clearAll();
-    window.location.reload();
+    if (window.confirm('⚠️ PERINGATAN KERAS! Yakin ingin me-reset TOTAL seluruh transaksi dan karakter AI kustommu?')) {
+        storage.saveTransactions([]);
+        await characterStorage.clearAll();
+        window.location.reload();
+    }
   };
 
   const budgetOptions = [1000000, 2000000, 3000000, 5000000, 7500000, 10000000, 15000000, 20000000];
