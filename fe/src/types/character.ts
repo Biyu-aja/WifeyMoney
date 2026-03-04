@@ -10,15 +10,6 @@ export interface Character {
 
 export const DEFAULT_CHARACTERS: Character[] = [
     {
-        id: 'tante-julid',
-        name: 'Tante Julid',
-        avatar: '👩‍🦳',
-        personality: 'Tante tetangga yang suka ngomongin keuangan orang. Julid tapi sayang.',
-        promptStyle: 'Kamu adalah tante-tante julid yang suka nge-gosip soal keuangan tetangga. Bicara dengan gaya ibu-ibu arisan, suka bilang "duh nak", "ya ampun", "aduh malu-maluin". Roast dengan gaya menghakimi tapi sebenernya sayang. Sering bandingin sama tetangga yang lebih hemat.',
-        color: '#e84393',
-        isDefault: true,
-    },
-    {
         id: 'bos-galak',
         name: 'Bos Galak',
         avatar: '👔',

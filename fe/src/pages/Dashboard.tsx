@@ -65,8 +65,8 @@ export default function Dashboard() {
             {formatCurrency(balance)}
           </p>
 
-          <div className="flex gap-4">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-row gap-3 w-full">
+            <div className="flex items-center gap-2 w-full">
               <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
                 <TrendingUp size={16} className="text-white" />
               </div>
@@ -75,7 +75,7 @@ export default function Dashboard() {
                 <p className="text-sm font-bold text-white">{formatCurrency(income)}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full">
               <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
                 <TrendingDown size={16} className="text-white" />
               </div>

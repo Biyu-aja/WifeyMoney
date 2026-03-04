@@ -30,6 +30,7 @@ export default function RoastMe() {
   const [error, setError] = useState('');
   const [characters, setCharacters] = useState<Character[]>(DEFAULT_CHARACTERS);
   const [selectedCharId, setSelectedCharId] = useState(characterStorage.getSelectedId());
+  const [selectedCharAvatarUrl, setSelectedCharAvatarUrl] = useState<string | null>(null);
   const [showCharacters, setShowCharacters] = useState(true);
   const [showCharForm, setShowCharForm] = useState(false);
 
@@ -44,6 +45,16 @@ export default function RoastMe() {
   };
 
   const selectedChar = characters.find(c => c.id === selectedCharId) || characters[0];
+
+  useEffect(() => {
+    if (selectedChar?.avatar && selectedChar.avatar.length > 4 && selectedChar.avatar.includes('.')) {
+      characterStorage.loadAvatar(selectedChar.avatar).then(url => {
+        if (url) setSelectedCharAvatarUrl(url);
+      });
+    } else {
+      setSelectedCharAvatarUrl(null);
+    }
+  }, [selectedChar]);
 
   const currentMonth = getCurrentMonth();
   const monthTx = filterByMonth(transactions, currentMonth);
@@ -146,7 +157,13 @@ export default function RoastMe() {
           className="flex items-center justify-between w-full mb-3"
         >
           <div className="flex items-center gap-2">
-            <span className="text-lg">{selectedChar.avatar.length <= 4 ? selectedChar.avatar : '🎭'}</span>
+            <span className="text-lg">
+              {selectedCharAvatarUrl ? (
+                <img src={selectedCharAvatarUrl} alt={selectedChar.name} className="w-10 h-10 rounded-full object-cover" />
+              ) : (
+                selectedChar.avatar?.length <= 4 ? selectedChar.avatar : "🎭"
+              )}
+            </span>
             <div>
               <h3 className="text-sm font-semibold text-left">Roaster: {selectedChar.name}</h3>
               <p className="text-[10px] text-dark-muted text-left">{selectedChar.personality}</p>
