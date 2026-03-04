@@ -1,0 +1,58 @@
+import type { Transaction, UserSettings, MonthlyBudget } from '../types';
+
+const TRANSACTIONS_KEY = 'wifey_transactions';
+const SETTINGS_KEY = 'wifey_settings';
+const BUDGETS_KEY = 'wifey_budgets';
+
+export const storage = {
+    getTransactions(): Transaction[] {
+        const data = localStorage.getItem(TRANSACTIONS_KEY);
+        return data ? JSON.parse(data) : [];
+    },
+
+    saveTransactions(transactions: Transaction[]): void {
+        localStorage.setItem(TRANSACTIONS_KEY, JSON.stringify(transactions));
+    },
+
+    addTransaction(transaction: Transaction): Transaction[] {
+        const transactions = this.getTransactions();
+        transactions.unshift(transaction);
+        this.saveTransactions(transactions);
+        return transactions;
+    },
+
+    deleteTransaction(id: string): Transaction[] {
+        const transactions = this.getTransactions().filter(t => t.id !== id);
+        this.saveTransactions(transactions);
+        return transactions;
+    },
+
+    getSettings(): UserSettings {
+        const data = localStorage.getItem(SETTINGS_KEY);
+        return data ? JSON.parse(data) : {
+            name: 'Sayang',
+            monthlyBudget: 5000000,
+            currency: 'IDR',
+        };
+    },
+
+    saveSettings(settings: UserSettings): void {
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    },
+
+    getBudgets(): MonthlyBudget[] {
+        const data = localStorage.getItem(BUDGETS_KEY);
+        return data ? JSON.parse(data) : [];
+    },
+
+    saveBudget(budget: MonthlyBudget): void {
+        const budgets = this.getBudgets();
+        const idx = budgets.findIndex(b => b.month === budget.month);
+        if (idx >= 0) {
+            budgets[idx] = budget;
+        } else {
+            budgets.push(budget);
+        }
+        localStorage.setItem(BUDGETS_KEY, JSON.stringify(budgets));
+    },
+};
