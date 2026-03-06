@@ -5,6 +5,7 @@ import Transactions from './pages/Transactions';
 import Analytics from './pages/Analytics';
 import RoastMe from './pages/RoastMe';
 import Settings from './pages/Settings';
+import CharacterCreator from './pages/CharacterCreator';
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/roast" element={<RoastMe />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/character-creator" element={<CharacterCreator />} />
         </Routes>
         <BottomNav />
       </div>

@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { Save, User, Wallet, Trash2, X, AlertTriangle } from 'lucide-react';
+import { Save, User, Wallet, Trash2, X, AlertTriangle, Wand2 } from 'lucide-react';
 import { storage } from '../utils/storage';
 import { characterStorage } from '../utils/opfs';
 import type { UserSettings } from '../types';
 import { formatCurrency } from '../utils/formatters';
 import CurrencyInput from '../components/CurrencyInput';
+import { useNavigate } from 'react-router-dom';
 
 export default function Settings() {
+  const navigate = useNavigate();
   const [settings, setSettings] = useState<UserSettings>(storage.getSettings());
 
   const [saved, setSaved] = useState(false);
@@ -117,7 +119,7 @@ export default function Settings() {
         </div>
 
         {/* Display Settings */}
-        <div className="gradient-card rounded-2xl p-5 border border-dark-border/50">
+        <div className="gradient-card rounded-2xl p-5 border border-dark-border/50 space-y-5">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-sm font-semibold">Format Uang Singkat</h3>
@@ -128,6 +130,21 @@ export default function Settings() {
               className={`w-12 h-6 rounded-full transition-colors relative ${settings.useCompactCurrency ? 'bg-primary' : 'bg-dark-border'}`}
             >
               <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${settings.useCompactCurrency ? 'left-7' : 'left-1'}`} />
+            </button>
+          </div>
+
+          <div className="h-px bg-dark-border/50 w-full" />
+
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold">Karakter AI di Home</h3>
+              <p className="text-xs text-dark-muted mt-1">Tampilkan omelan singkat di halaman utama</p>
+            </div>
+            <button
+              onClick={() => setSettings({ ...settings, useQuickRoast: settings.useQuickRoast === false ? true : false })}
+              className={`w-12 h-6 rounded-full transition-colors relative ${settings.useQuickRoast !== false ? 'bg-primary' : 'bg-dark-border'}`}
+            >
+              <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${settings.useQuickRoast !== false ? 'left-7' : 'left-1'}`} />
             </button>
           </div>
         </div>
@@ -144,6 +161,23 @@ export default function Settings() {
           <Save size={18} />
           {saved ? '✅ Tersimpan!' : 'Simpan Pengaturan'}
         </button>
+
+        {/* Custom AI Character Section */}
+        <div className="gradient-card rounded-2xl p-5 border border-primary/20 bg-primary/5">
+          <div className="flex items-center gap-2 mb-3">
+            <Wand2 size={16} className="text-primary-light" />
+            <h3 className="text-sm font-semibold text-primary-light">Karakter AI Custom</h3>
+          </div>
+          <p className="text-xs text-dark-muted mb-4">
+            Buat karakter asisten keuanganmu sendiri! Upload gambar asistenmu beserta ekspresinya dan definisikan gaya bicaranya.
+          </p>
+          <button
+            onClick={() => navigate('/character-creator')}
+            className="w-full py-3 rounded-xl gradient-primary text-white font-semibold text-sm transition"
+          >
+            + Buat Karakter Baru
+          </button>
+        </div>
 
         {/* Danger Zone */}
         <div className="gradient-card rounded-2xl p-5 border border-danger/20">

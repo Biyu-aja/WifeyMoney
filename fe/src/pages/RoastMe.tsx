@@ -14,7 +14,7 @@ import {
 } from '../utils/formatters';
 import { getCategoryInfo } from '../types';
 import CharacterCard from '../components/CharacterCard';
-import CharacterForm from '../components/CharacterForm';
+import { useNavigate } from 'react-router-dom';
 
 interface RoastResult {
   roast: string;
@@ -31,9 +31,8 @@ export default function RoastMe() {
   const [characters, setCharacters] = useState<Character[]>(DEFAULT_CHARACTERS);
   const [selectedCharId, setSelectedCharId] = useState(characterStorage.getSelectedId());
   const [selectedCharAvatarUrl, setSelectedCharAvatarUrl] = useState<string | null>(null);
+  const navigate = useNavigate();
   const [showCharacters, setShowCharacters] = useState(true);
-  const [showCharForm, setShowCharForm] = useState(false);
-  const [characterToEdit, setCharacterToEdit] = useState<Character | undefined>(undefined);
 
   useEffect(() => {
     setTransactions(storage.getTransactions());
@@ -195,13 +194,13 @@ export default function RoastMe() {
                 isSelected={selectedCharId === char.id}
                 onSelect={handleSelectChar}
                 onDelete={!char.isDefault ? handleDeleteChar : undefined}
-                onEdit={!char.isDefault ? (c) => { setCharacterToEdit(c); setShowCharForm(true); } : undefined}
+                onEdit={undefined} // Edit is not supported in the new CharacterCreator yet
               />
             ))}
 
             {/* Add Custom Character */}
             <button
-              onClick={() => { setCharacterToEdit(undefined); setShowCharForm(true); }}
+              onClick={() => navigate('/character-creator')}
               className="w-full p-4 rounded-2xl border-2 border-dashed border-dark-border/50 hover:border-primary/50 transition-all flex items-center justify-center gap-2 text-dark-muted hover:text-primary-light"
             >
               <Plus size={18} />
@@ -378,13 +377,7 @@ export default function RoastMe() {
         </div>
       )}
 
-      {/* Character Form Modal */}
-      <CharacterForm
-        isOpen={showCharForm}
-        onClose={() => { setShowCharForm(false); setCharacterToEdit(undefined); }}
-        onSaved={loadCharacters}
-        initialData={characterToEdit}
-      />
+      {/* Character Form Modal removed, handled via CharacterCreator page */}
     </div>
   );
 }

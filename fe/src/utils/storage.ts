@@ -35,6 +35,7 @@ export const storage = {
             currency: 'IDR',
             useCompactCurrency: false,
             useBudget: true,
+            useQuickRoast: true,
         };
     },
 

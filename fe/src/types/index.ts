@@ -26,6 +26,7 @@ export interface UserSettings {
     currency: string;
     useCompactCurrency?: boolean;
     useBudget?: boolean;
+    useQuickRoast?: boolean;
 }
 
 export interface RoastResponse {

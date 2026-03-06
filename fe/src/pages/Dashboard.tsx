@@ -186,7 +186,7 @@ export default function Dashboard() {
         onSave={handleSave}
       />
 
-      <DashboardCharacter />
+      {settings.useQuickRoast !== false && <DashboardCharacter />}
     </div>
   );
 }
