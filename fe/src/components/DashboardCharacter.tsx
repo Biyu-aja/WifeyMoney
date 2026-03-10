@@ -78,6 +78,7 @@ export default function DashboardCharacter() {
             characterPrompt: character.promptStyle,
             availableExpressions: ['normal', ...Object.keys(character.expressions || {})],
             recentTransactions,
+            language: settings.language || 'id',
         };
 
         const apiUrl = import.meta.env.VITE_API_URL || '';

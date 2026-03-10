@@ -18,6 +18,7 @@ interface FinancialData {
     characterName?: string;
     characterPrompt?: string;
     recentTransactions?: { description: string; amount: number; category: string; type?: string; date?: string }[];
+    language?: string;
 }
 
 function buildPrompt(data: FinancialData): string {
@@ -25,9 +26,13 @@ function buildPrompt(data: FinancialData): string {
         .map(c => `- ${c.category}: Rp${c.amount.toLocaleString('id-ID')} (${c.percent}%)`)
         .join('\n');
 
+    const languageInstruction = data.language === 'en'
+        ? "You must respond in English informal language."
+        : "You must respond in Indonesian slang or informal language.";
+
     const characterInstruction = data.characterPrompt
-        ? `CHARACTER PERSONA: You are acting as "${data.characterName}". ${data.characterPrompt}\nYou MUST consistently stay in character for your entire response, but answer in Indonesian slang.`
-        : 'You are a funny and helpful financial AI commentator. You must respond in Indonesian slang/informal language.';
+        ? `CHARACTER PERSONA: You are acting as "${data.characterName}". ${data.characterPrompt}\nYou MUST consistently stay in character for your entire response, and ${languageInstruction}`
+        : `You are a funny and helpful financial AI commentator. ${languageInstruction}`;
 
     const recentTxStr = data.recentTransactions && data.recentTransactions.length > 0
         ? `\n\nRecent Transactions (Chronological Order, most recent first):\n${data.recentTransactions.map(t => {
@@ -52,9 +57,9 @@ Top expense categories:
 ${topCatStr}${recentTxStr}
 
 Your tasks:
-1. Provide a funny and entertaining commentary (3-5 sentences) about their financial habits. You MUST strictly follow your character's persona and speaking style! Use emojis. Make it personal and specific based on the numbers above. Do not use formal Indonesian!
+1. Provide a funny and entertaining commentary (3-5 sentences) about their financial habits. You MUST strictly follow your character's persona and speaking style! Use emojis. Make it personal and specific based on the numbers above. Do not use formal language!
 CRITICAL RULE: If their financial data is good (e.g. huge income, high savings, low expenses), you MUST PRAISE them instead of teasing. ONLY "roast" or tease them if they are wasting money or their expenses are bad.
-2. Provide 3-4 actionable and relevant financial tips, continuing to speak in your character's persona (in Indonesian).
+2. Provide 3-4 actionable and relevant financial tips, continuing to speak in your character's persona.
 3. Give them a financial health score from 1 to 100.
 4. Give 1 single emoji that best describes their financial condition.
 

@@ -1,4 +1,5 @@
 import type { Transaction, DailySummary } from '../types';
+import i18n from '../i18n';
 
 export function formatCurrency(amount: number): string {
     try {
@@ -15,7 +16,7 @@ export function formatCurrency(amount: number): string {
         // ignore storage errors
     }
 
-    return new Intl.NumberFormat('id-ID', {
+    return new Intl.NumberFormat(i18n.language === 'en' ? 'en-US' : 'id-ID', {
         style: 'currency',
         currency: 'IDR',
         minimumFractionDigits: 0,
@@ -41,14 +42,14 @@ export function parseAmountInput(value: string): { display: string; numeric: num
     if (!numericStr) return { display: '', numeric: 0 };
 
     const numeric = parseInt(numericStr, 10);
-    const display = new Intl.NumberFormat('id-ID').format(numeric);
+    const display = new Intl.NumberFormat(i18n.language === 'en' ? 'en-US' : 'id-ID').format(numeric);
 
     return { display, numeric };
 }
 
 export function formatDate(dateStr: string): string {
     const date = new Date(dateStr);
-    return new Intl.DateTimeFormat('id-ID', {
+    return new Intl.DateTimeFormat(i18n.language === 'en' ? 'en-US' : 'id-ID', {
         day: 'numeric',
         month: 'short',
         year: 'numeric',
@@ -57,7 +58,7 @@ export function formatDate(dateStr: string): string {
 
 export function formatTime(dateStr: string): string {
     const date = new Date(dateStr);
-    return new Intl.DateTimeFormat('id-ID', {
+    return new Intl.DateTimeFormat(i18n.language === 'en' ? 'en-US' : 'id-ID', {
         hour: '2-digit',
         minute: '2-digit',
     }).format(date);
@@ -69,9 +70,11 @@ export function formatRelativeDate(dateStr: string): string {
     const diff = now.getTime() - date.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-    if (days === 0) return 'Hari ini';
-    if (days === 1) return 'Kemarin';
-    if (days < 7) return `${days} hari lalu`;
+    const isEn = i18n.language === 'en';
+
+    if (days === 0) return isEn ? 'Today' : 'Hari ini';
+    if (days === 1) return isEn ? 'Yesterday' : 'Kemarin';
+    if (days < 7) return isEn ? `${days} days ago` : `${days} hari lalu`;
     return formatDate(dateStr);
 }
 
@@ -83,7 +86,7 @@ export function getCurrentMonth(): string {
 export function getMonthLabel(monthStr: string): string {
     const [year, month] = monthStr.split('-');
     const date = new Date(parseInt(year), parseInt(month) - 1);
-    return new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(date);
+    return new Intl.DateTimeFormat(i18n.language === 'en' ? 'en-US' : 'id-ID', { month: 'long', year: 'numeric' }).format(date);
 }
 
 export function filterByMonth(transactions: Transaction[], month: string): Transaction[] {
@@ -111,7 +114,7 @@ export function getDailySummaries(transactions: Transaction[], days: number = 7)
 
         const dayTransactions = transactions.filter(t => t.date.startsWith(dateStr));
         summaries.push({
-            date: new Intl.DateTimeFormat('id-ID', { weekday: 'short' }).format(date),
+            date: new Intl.DateTimeFormat(i18n.language === 'en' ? 'en-US' : 'id-ID', { weekday: 'short' }).format(date),
             income: dayTransactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0),
             expense: dayTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0),
         });

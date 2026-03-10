@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import type { Transaction, TransactionType, Category } from '../types';
 import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '../types';
 import CurrencyInput from './CurrencyInput';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   isOpen: boolean;
@@ -17,6 +18,7 @@ export default function TransactionForm({ isOpen, onClose, onSave }: Props) {
   const [category, setCategory] = useState<Category | ''>('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const { t } = useTranslation();
 
   const categories = type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
 
@@ -65,7 +67,7 @@ export default function TransactionForm({ isOpen, onClose, onSave }: Props) {
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3">
-          <h2 className="text-lg font-display font-bold text-dark-text">Transaksi Baru</h2>
+          <h2 className="text-lg font-display font-bold text-dark-text">{type === 'expense' ? t('txForm.titleExpense') : t('txForm.titleIncome')}</h2>
           <button
             onClick={() => { resetForm(); onClose(); }}
             className="p-2 rounded-full hover:bg-dark-border/50 transition"
@@ -86,7 +88,7 @@ export default function TransactionForm({ isOpen, onClose, onSave }: Props) {
               }`}
             >
               <TrendingDown size={18} />
-              Pengeluaran
+              {t('txForm.expenseBtn')}
             </button>
             <button
               onClick={() => { setType('income'); setCategory(''); }}
@@ -97,13 +99,13 @@ export default function TransactionForm({ isOpen, onClose, onSave }: Props) {
               }`}
             >
               <TrendingUp size={18} />
-              Pemasukan
+              {t('txForm.incomeBtn')}
             </button>
           </div>
 
           {/* Amount */}
           <CurrencyInput
-            label="Jumlah (Rp)"
+            label={t('txForm.amountLabel')}
             value={amount}
             onChange={setAmount}
             className="w-full bg-dark/50 border border-dark-border rounded-2xl px-4 py-4 text-2xl font-bold text-dark-text placeholder:text-dark-muted/40 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition"
@@ -111,7 +113,7 @@ export default function TransactionForm({ isOpen, onClose, onSave }: Props) {
 
           {/* Date */}
           <div>
-            <label className="text-xs text-dark-muted font-medium mb-2 block">Tanggal</label>
+            <label className="text-xs text-dark-muted font-medium mb-2 block">{t('txForm.dateLabel')}</label>
             <input
               type="date"
               value={date}
@@ -122,7 +124,7 @@ export default function TransactionForm({ isOpen, onClose, onSave }: Props) {
 
           {/* Category */}
           <div>
-            <label className="text-xs text-dark-muted font-medium mb-2 block">Kategori</label>
+            <label className="text-xs text-dark-muted font-medium mb-2 block">{t('txForm.categoryLabel')}</label>
             <div className="grid grid-cols-3 gap-2">
               {categories.map((cat) => (
                 <button
@@ -135,7 +137,7 @@ export default function TransactionForm({ isOpen, onClose, onSave }: Props) {
                   }`}
                 >
                   <span className="text-xl">{cat.emoji}</span>
-                  <span className="text-[11px] font-medium text-dark-text">{cat.label}</span>
+                  <span className="text-[11px] font-medium text-dark-text">{t('category.' + cat.value)}</span>
                 </button>
               ))}
             </div>
@@ -143,12 +145,12 @@ export default function TransactionForm({ isOpen, onClose, onSave }: Props) {
 
           {/* Description */}
           <div>
-            <label className="text-xs text-dark-muted font-medium mb-2 block">Catatan (opsional)</label>
+            <label className="text-xs text-dark-muted font-medium mb-2 block">{t('txForm.descLabel')}</label>
             <input
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Deskripsi singkat..."
+              placeholder={t('txForm.descPlaceholder')}
               className="w-full bg-dark/50 border border-dark-border rounded-2xl px-4 py-3 text-dark-text placeholder:text-dark-muted/40 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition"
             />
           </div>
@@ -163,7 +165,7 @@ export default function TransactionForm({ isOpen, onClose, onSave }: Props) {
                 : 'bg-dark-border text-dark-muted cursor-not-allowed'
             }`}
           >
-            💰 Simpan Transaksi
+            💰 {t('txForm.save')}
           </button>
         </div>
       </div>

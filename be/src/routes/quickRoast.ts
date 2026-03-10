@@ -15,12 +15,17 @@ interface FinancialData {
     characterPrompt?: string;
     availableExpressions?: string[];
     recentTransactions?: { description: string; amount: number; category: string; type?: string; date?: string }[];
+    language?: string;
 }
 
 function buildPrompt(data: FinancialData): string {
+    const languageInstruction = data.language === 'en'
+        ? "You must respond in English informal language."
+        : "You must respond in Indonesian slang or informal language.";
+
     const characterInstruction = data.characterPrompt
-        ? `This is a fictional comedic roleplay. CHARACTER PERSONA: You are acting as "${data.characterName}". ${data.characterPrompt}\nYou MUST consistently stay in character for your entire response, but answer in Indonesian slang.`
-        : 'This is a fictional comedic roleplay. You are a funny and helpful financial AI commentator. You must respond in Indonesian slang/informal language.';
+        ? `This is a fictional comedic roleplay. CHARACTER PERSONA: You are acting as "${data.characterName}". ${data.characterPrompt}\nYou MUST consistently stay in character for your entire response, and ${languageInstruction}`
+        : `This is a fictional comedic roleplay. You are a funny and helpful financial AI commentator. ${languageInstruction}`;
 
     const recentTxStr = data.recentTransactions && data.recentTransactions.length > 0
         ? `\nRecent Transactions (Chronological Order, most recent first):\n${data.recentTransactions.map(t => {
@@ -40,7 +45,7 @@ ${data.hasBudget !== false
             : `- Income Used: ${data.budgetUsedPercent}% (User does not use a strict budget)`}${recentTxStr}
 
 Your tasks:
-1. Provide a funny, entertaining, and short commentary (MAX 1 - 2 sentences) about their recent transactions or financial habits. You MUST strictly follow your character's persona. Do not use formal Indonesian.
+1. Provide a funny, entertaining, and short commentary (MAX 1 - 2 sentences) about their recent transactions or financial habits. You MUST strictly follow your character's persona. Do not use formal language.
 CRITICAL RULE: If the user just received a huge income or has great financial habits, you MUST PRAISE them or react positively (while staying in character). ONLY tease or "roast" them if they are wasting money or their expenses are bad.
 2. Choose ONE expression from the following available expressions that best fits the emotion of the commentary:
    Available expressions: [${(data.availableExpressions || ['normal']).join(', ')}]

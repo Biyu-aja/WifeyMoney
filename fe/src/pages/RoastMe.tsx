@@ -15,6 +15,7 @@ import {
 import { getCategoryInfo } from '../types';
 import CharacterCard from '../components/CharacterCard';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 interface RoastResult {
   roast: string;
@@ -33,6 +34,7 @@ export default function RoastMe() {
   const [selectedCharAvatarUrl, setSelectedCharAvatarUrl] = useState<string | null>(null);
   const navigate = useNavigate();
   const [showCharacters, setShowCharacters] = useState(true);
+  const { t } = useTranslation();
 
   useEffect(() => {
     setTransactions(storage.getTransactions());
@@ -79,7 +81,7 @@ export default function RoastMe() {
 
   const handleRoast = async () => {
     if (monthTx.length === 0) {
-      setError('Belum ada transaksi bulan ini. Catat dulu pengeluaranmu baru di-roast! 🔥');
+      setError(t('roast.noTxWarning'));
       return;
     }
 
@@ -117,6 +119,7 @@ export default function RoastMe() {
         characterName: selectedChar.name,
         characterPrompt: selectedChar.promptStyle,
         recentTransactions,
+        language: settings.language || 'id',
       };
 
       const apiUrl = import.meta.env.VITE_API_URL || '';
@@ -158,9 +161,9 @@ export default function RoastMe() {
       <div className="px-5 pt-6 pb-3">
         <h1 className="text-xl font-display font-bold flex items-center gap-2">
           <Flame className="text-accent" size={24} />
-          AI Roast
+          {t('roast.title')}
         </h1>
-        <p className="text-dark-muted text-xs mt-0.5">Pilih karakter, lalu siap mental di-roast! 🔥</p>
+        <p className="text-dark-muted text-xs mt-0.5">{t('roast.subtitle')}</p>
       </div>
 
       {/* Character Selection */}
@@ -204,7 +207,7 @@ export default function RoastMe() {
               className="w-full p-4 rounded-2xl border-2 border-dashed border-dark-border/50 hover:border-primary/50 transition-all flex items-center justify-center gap-2 text-dark-muted hover:text-primary-light"
             >
               <Plus size={18} />
-              <span className="text-sm font-medium">Buat Karakter Baru</span>
+              <span className="text-sm font-medium">{t('settings.createNewChar')}</span>
             </button>
           </div>
         )}
@@ -267,12 +270,12 @@ export default function RoastMe() {
           {loading ? (
             <>
               <RefreshCw size={20} className="animate-spin" />
-              {selectedChar.name} lagi mikir...
+              {t('roast.analyzing')}
             </>
           ) : (
             <>
               <Flame size={20} />
-              🔥 ROAST oleh {selectedChar.name}! 🔥
+              {t('roast.roastMeBtn')}
             </>
           )}
         </button>

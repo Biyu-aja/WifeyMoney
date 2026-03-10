@@ -2,6 +2,7 @@ import { Trash2 } from 'lucide-react';
 import type { Transaction } from '../types';
 import { getCategoryInfo } from '../types';
 import { formatCurrency, formatRelativeDate } from '../utils/formatters';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   transaction: Transaction;
@@ -11,6 +12,7 @@ interface Props {
 export default function TransactionCard({ transaction, onDelete }: Props) {
   const cat = getCategoryInfo(transaction.category);
   const isExpense = transaction.type === 'expense';
+  const { t } = useTranslation();
 
   return (
     <div className="flex items-center gap-3 p-3 rounded-2xl bg-dark-card/50 border border-dark-border/50 hover:border-dark-border transition-all group">
@@ -24,7 +26,7 @@ export default function TransactionCard({ transaction, onDelete }: Props) {
       {/* Info */}
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-sm text-dark-text truncate">{transaction.description}</p>
-        <p className="text-xs text-dark-muted mt-0.5">{cat.label} • {formatRelativeDate(transaction.date)}</p>
+        <p className="text-xs text-dark-muted mt-0.5">{t('category.' + cat.value)} • {formatRelativeDate(transaction.date)}</p>
       </div>
 
       {/* Amount */}

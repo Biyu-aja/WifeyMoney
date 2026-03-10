@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { parseAmountInput } from '../utils/formatters';
+import { useTranslation } from 'react-i18next';
 
 interface CurrencyInputProps {
   value: number;
@@ -16,8 +17,11 @@ export default function CurrencyInput({
   placeholder = '0',
   className = 'w-full bg-dark/50 border border-dark-border rounded-2xl px-4 py-3 text-dark-text placeholder:text-dark-muted/40 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition',
 }: CurrencyInputProps) {
+  const { i18n } = useTranslation();
+  const locale = i18n.language === 'en' ? 'en-US' : 'id-ID';
+
   const [display, setDisplay] = useState(() => 
-    value ? new Intl.NumberFormat('id-ID').format(value) : ''
+    value ? new Intl.NumberFormat(locale).format(value) : ''
   );
 
   useEffect(() => {
@@ -27,10 +31,10 @@ export default function CurrencyInput({
     } else if (value !== 0) {
       const parsed = parseAmountInput(display);
       if (parsed.numeric !== value) {
-        setDisplay(new Intl.NumberFormat('id-ID').format(value));
+        setDisplay(new Intl.NumberFormat(locale).format(value));
       }
     }
-  }, [value]);
+  }, [value, locale]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const parsed = parseAmountInput(e.target.value);

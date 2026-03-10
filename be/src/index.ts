@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { roastRouter } from './routes/roast';
 import { quickRoastRouter } from './routes/quickRoast';
+import { chatRouter } from './routes/chat';
 
 dotenv.config();
 
@@ -15,6 +16,7 @@ app.use(express.json());
 // Routes
 app.use('/api/roast', roastRouter);
 app.use('/api/quick-roast', quickRoastRouter);
+app.use('/api/chat', chatRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {

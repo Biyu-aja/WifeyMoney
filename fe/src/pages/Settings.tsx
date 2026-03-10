@@ -6,9 +6,12 @@ import type { UserSettings } from '../types';
 import { formatCurrency } from '../utils/formatters';
 import CurrencyInput from '../components/CurrencyInput';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 
 export default function Settings() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [settings, setSettings] = useState<UserSettings>(storage.getSettings());
 
   const [saved, setSaved] = useState(false);
@@ -21,21 +24,21 @@ export default function Settings() {
   };
 
   const handleClearTransactions = () => {
-    if (window.confirm('Yakin ingin menghapus semua riwayat transaksi bulanan? Saldo akan direset ke 0! Data tidak bisa dikembalikan.')) {
+    if (window.confirm(t('settings.deleteTransactionsConfirm'))) {
         storage.saveTransactions([]);
         window.location.reload();
     }
   };
 
   const handleClearCharacters = async () => {
-    if (window.confirm('Yakin ingin menghapus semua karakter custom AI dan fotonya? Aplikasi akan mengembalikannya ke bawaan.')) {
+    if (window.confirm(t('settings.deleteCharsConfirm'))) {
         await characterStorage.clearAll();
         window.location.reload();
     }
   };
 
   const handleClearAll = async () => {
-    if (window.confirm('⚠️ PERINGATAN KERAS! Yakin ingin me-reset TOTAL seluruh transaksi dan karakter AI kustommu?')) {
+    if (window.confirm(t('settings.resetAllConfirm'))) {
         storage.saveTransactions([]);
         await characterStorage.clearAll();
         window.location.reload();
@@ -48,8 +51,8 @@ export default function Settings() {
     <div className="min-h-screen pb-24">
       {/* Header */}
       <div className="px-5 pt-6 pb-3">
-        <h1 className="text-xl font-display font-bold">Pengaturan</h1>
-        <p className="text-dark-muted text-xs mt-0.5">Personalisasi aplikasi kamu</p>
+        <h1 className="text-xl font-display font-bold">{t('settings.title')}</h1>
+        <p className="text-dark-muted text-xs mt-0.5">{t('settings.subtitle')}</p>
       </div>
 
       <div className="px-5 space-y-5">
@@ -57,18 +60,48 @@ export default function Settings() {
         <div className="gradient-card rounded-2xl p-5 border border-dark-border/50">
           <div className="flex items-center gap-2 mb-4">
             <User size={16} className="text-primary-light" />
-            <h3 className="text-sm font-semibold">Profil</h3>
+            <h3 className="text-sm font-semibold">{t('settings.profile')}</h3>
           </div>
 
           <div>
-            <label className="text-xs text-dark-muted font-medium mb-2 block">Nama Panggilan</label>
+            <label className="text-xs text-dark-muted font-medium mb-2 block">{t('settings.nickname')}</label>
             <input
               type="text"
               value={settings.name}
               onChange={e => setSettings({ ...settings, name: e.target.value })}
-              placeholder="Nama kamu"
-              className="w-full bg-dark/50 border border-dark-border rounded-2xl px-4 py-3 text-dark-text placeholder:text-dark-muted/40 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition"
+              placeholder={t('settings.nicknamePlaceholder')}
+              className="w-full bg-dark/50 border border-dark-border rounded-2xl px-4 py-3 text-dark-text placeholder:text-dark-muted/40 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition mb-4"
             />
+            
+            <label className="text-xs text-dark-muted font-medium mb-2 block">{t('settings.language')}</label>
+            <div className="flex bg-dark/50 border border-dark-border rounded-2xl p-1 w-full gap-1">
+                <button
+                    onClick={() => {
+                        setSettings({ ...settings, language: 'id' });
+                        i18n.changeLanguage('id');
+                    }}
+                    className={`flex-1 py-2 text-sm font-medium rounded-xl transition-all ${
+                        settings.language === 'id' || !settings.language
+                            ? 'bg-primary text-dark shadow-sm'
+                            : 'text-dark-muted hover:text-dark-text'
+                    }`}
+                >
+                    🇮🇩 Indonesia
+                </button>
+                <button
+                    onClick={() => {
+                        setSettings({ ...settings, language: 'en' });
+                        i18n.changeLanguage('en');
+                    }}
+                    className={`flex-1 py-2 text-sm font-medium rounded-xl transition-all ${
+                        settings.language === 'en'
+                            ? 'bg-primary text-dark shadow-sm'
+                            : 'text-dark-muted hover:text-dark-text'
+                    }`}
+                >
+                    🇬🇧 English
+                </button>
+            </div>
           </div>
         </div>
 
@@ -77,7 +110,7 @@ export default function Settings() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Wallet size={16} className="text-primary-light" />
-              <h3 className="text-sm font-semibold">Budget Bulanan</h3>
+              <h3 className="text-sm font-semibold">{t('settings.budget')}</h3>
             </div>
             <button
               onClick={() => setSettings({ ...settings, useBudget: settings.useBudget === false ? true : false })}
@@ -92,7 +125,7 @@ export default function Settings() {
 
           <div className="mb-3">
             <CurrencyInput
-              label="Jumlah Budget (Rp)"
+              label={t('settings.budgetAmount')}
               value={settings.monthlyBudget}
               onChange={val => setSettings({ ...settings, monthlyBudget: val })}
               className="w-full bg-dark/50 border border-dark-border rounded-2xl px-4 py-3 text-dark-text focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition"
@@ -122,8 +155,8 @@ export default function Settings() {
         <div className="gradient-card rounded-2xl p-5 border border-dark-border/50 space-y-5">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-semibold">Format Uang Singkat</h3>
-              <p className="text-xs text-dark-muted mt-1">Tampilkan Rp1.000.000 sebagai Rp1M</p>
+              <h3 className="text-sm font-semibold">{t('settings.displaySettings')}</h3>
+              <p className="text-xs text-dark-muted mt-1">{t('settings.displaySettingsDesc')}</p>
             </div>
             <button
               onClick={() => setSettings({ ...settings, useCompactCurrency: !settings.useCompactCurrency })}
@@ -137,8 +170,8 @@ export default function Settings() {
 
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-semibold">Karakter AI di Home</h3>
-              <p className="text-xs text-dark-muted mt-1">Tampilkan omelan singkat di halaman utama</p>
+              <h3 className="text-sm font-semibold">{t('settings.quickRoast')}</h3>
+              <p className="text-xs text-dark-muted mt-1">{t('settings.quickRoastDesc')}</p>
             </div>
             <button
               onClick={() => setSettings({ ...settings, useQuickRoast: settings.useQuickRoast === false ? true : false })}
@@ -159,35 +192,34 @@ export default function Settings() {
           }`}
         >
           <Save size={18} />
-          {saved ? '✅ Tersimpan!' : 'Simpan Pengaturan'}
+          {saved ? t('settings.saved') : t('settings.save')}
         </button>
 
-        {/* Custom AI Character Section */}
         <div className="gradient-card rounded-2xl p-5 border border-primary/20 bg-primary/5">
           <div className="flex items-center gap-2 mb-3">
             <Wand2 size={16} className="text-primary-light" />
-            <h3 className="text-sm font-semibold text-primary-light">Karakter AI Custom</h3>
+            <h3 className="text-sm font-semibold text-primary-light">{t('settings.customAi')}</h3>
           </div>
           <p className="text-xs text-dark-muted mb-4">
-            Buat karakter asisten keuanganmu sendiri! Upload gambar asistenmu beserta ekspresinya dan definisikan gaya bicaranya.
+            {t('settings.customAiDesc')}
           </p>
           <button
             onClick={() => navigate('/character-creator')}
             className="w-full py-3 rounded-xl gradient-primary text-white font-semibold text-sm transition"
           >
-            + Buat Karakter Baru
+            {t('settings.createNewChar')}
           </button>
         </div>
 
         {/* Danger Zone */}
         <div className="gradient-card rounded-2xl p-5 border border-danger/20">
-          <h3 className="text-sm font-semibold text-danger mb-3">⚠️ Zona Bahaya</h3>
+          <h3 className="text-sm font-semibold text-danger mb-3">{t('settings.dangerZone')}</h3>
           <button
             onClick={() => setShowClearModal(true)}
             className="w-full py-3 rounded-2xl border border-danger/30 text-danger text-sm font-medium hover:bg-danger/10 transition flex items-center justify-center gap-2"
           >
             <Trash2 size={16} />
-            Hapus Data / Reset
+            {t('settings.clearDataBtn')}
           </button>
         </div>
 
@@ -205,7 +237,7 @@ export default function Settings() {
             <div className="flex items-center justify-between p-4 border-b border-dark-border/50">
               <h3 className="font-display font-bold text-lg flex items-center gap-2 text-danger">
                 <AlertTriangle size={20} />
-                Zone Bahaya
+                {t('settings.modalTitle')}
               </h3>
               <button 
                 onClick={() => setShowClearModal(false)}
@@ -217,23 +249,23 @@ export default function Settings() {
             
             <div className="p-5 space-y-4">
               <p className="text-sm text-dark-muted">
-                Pilih data apa yang ingin kamu hapus secara permanen. Operasi ini tidak dapat dibatalkan!
+                {t('settings.modalDesc')}
               </p>
 
               <button 
                 onClick={handleClearTransactions}
                 className="w-full p-4 rounded-2xl border border-dark-border hover:border-warning/50 hover:bg-warning/10 transition group text-left"
               >
-                <h4 className="font-semibold text-warning group-hover:text-warning-light transition">Hapus Riwayat Transaksi</h4>
-                <p className="text-xs text-dark-muted mt-1">Uang masuk, pengeluaran bulanan, dan sisa budget akan direset.</p>
+                <h4 className="font-semibold text-warning group-hover:text-warning-light transition">{t('settings.deleteTransactionsTitle')}</h4>
+                <p className="text-xs text-dark-muted mt-1">{t('settings.deleteTransactionsDesc')}</p>
               </button>
 
               <button 
                 onClick={handleClearCharacters}
                 className="w-full p-4 rounded-2xl border border-dark-border hover:border-primary/50 hover:bg-primary/10 transition group text-left"
               >
-                <h4 className="font-semibold text-primary-light group-hover:text-white transition">Hapus Karakter AI</h4>
-                <p className="text-xs text-dark-muted mt-1">Semua karakter kustom dan file fotonya di memori akan hilang (kembali ke bawaan).</p>
+                <h4 className="font-semibold text-primary-light group-hover:text-white transition">{t('settings.deleteCharsTitle')}</h4>
+                <p className="text-xs text-dark-muted mt-1">{t('settings.deleteCharsDesc')}</p>
               </button>
 
               <div className="pt-2">
@@ -241,7 +273,7 @@ export default function Settings() {
                   onClick={handleClearAll}
                   className="w-full p-4 rounded-2xl bg-danger/10 border border-danger/30 hover:bg-danger hover:text-white text-danger transition text-center font-bold"
                 >
-                  💣 RESET TOTAL APLIKASI
+                  {t('settings.resetAllBtn')}
                 </button>
               </div>
             </div>

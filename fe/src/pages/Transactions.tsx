@@ -5,12 +5,14 @@ import { storage } from '../utils/storage';
 import { formatDate } from '../utils/formatters';
 import TransactionCard from '../components/TransactionCard';
 import TransactionForm from '../components/TransactionForm';
+import { useTranslation } from 'react-i18next';
 
 export default function Transactions() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<TransactionType | 'all'>('all');
   const [showForm, setShowForm] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     setTransactions(storage.getTransactions());
@@ -47,8 +49,8 @@ export default function Transactions() {
     <div className="min-h-screen pb-24">
       {/* Header */}
       <div className="px-5 pt-6 pb-3">
-        <h1 className="text-xl font-display font-bold">Transaksi</h1>
-        <p className="text-dark-muted text-xs mt-0.5">{transactions.length} total transaksi</p>
+        <h1 className="text-xl font-display font-bold">{t('transactions.title')}</h1>
+        <p className="text-dark-muted text-xs mt-0.5">{transactions.length} total</p>
       </div>
 
       {/* Search & Filter */}
@@ -59,7 +61,7 @@ export default function Transactions() {
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Cari transaksi..."
+            placeholder={t('transactions.searchPlaceholder')}
             className="w-full bg-dark-card border border-dark-border rounded-2xl pl-10 pr-4 py-3 text-sm text-dark-text placeholder:text-dark-muted/50 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition"
           />
         </div>
@@ -76,7 +78,7 @@ export default function Transactions() {
               }`}
             >
               <Filter size={12} />
-              {type === 'all' ? 'Semua' : type === 'expense' ? 'Pengeluaran' : 'Pemasukan'}
+              {type === 'all' ? t('transactions.allMonths') : type === 'expense' ? t('txForm.expenseBtn') : t('txForm.incomeBtn')}
             </button>
           ))}
         </div>
@@ -87,7 +89,7 @@ export default function Transactions() {
         {sortedDates.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-4xl mb-3">🔍</p>
-            <p className="text-dark-muted text-sm">Tidak ada transaksi ditemukan</p>
+            <p className="text-dark-muted text-sm">{t('transactions.noData')}</p>
           </div>
         ) : (
           sortedDates.map(date => (

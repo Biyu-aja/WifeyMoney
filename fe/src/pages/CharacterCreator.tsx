@@ -3,6 +3,7 @@ import { Camera, Image as ImageIcon, Save, ArrowLeft, Plus, X } from 'lucide-rea
 import { useNavigate } from 'react-router-dom';
 import { characterStorage } from '../utils/opfs';
 import type { Character } from '../types/character';
+import { useTranslation } from 'react-i18next';
 
 // Helper to convert base64 or data url to File object
 function dataURLtoFile(dataurl: string, filename: string) {
@@ -25,6 +26,7 @@ export default function CharacterCreator() {
     const [name, setName] = useState('');
     const [personality, setPersonality] = useState('');
     const [promptStyle, setPromptStyle] = useState('');
+    const { t } = useTranslation();
     
     const [baseImage, setBaseImage] = useState<string | null>(null);
     const [emotions, setEmotions] = useState<Record<string, string | null>>({
@@ -75,7 +77,7 @@ export default function CharacterCreator() {
 
     const handleSave = async () => {
         if (!name || !baseImage) {
-            alert('Nama dan Gambar Awal wajib diisi!');
+            alert(t('charCreator.fillNamePrompt') + ' ' + t('charCreator.avatarRequired'));
             return;
         }
 
@@ -133,14 +135,14 @@ export default function CharacterCreator() {
                     <ArrowLeft size={18} />
                 </button>
                 <div>
-                    <h1 className="text-xl font-display font-bold">Buat Karakter AI</h1>
-                    <p className="text-dark-muted text-xs mt-0.5">Custom asisten keuanganmu</p>
+                    <h1 className="text-xl font-display font-bold">{t('charCreator.title')}</h1>
+                    <p className="text-dark-muted text-xs mt-0.5">{t('charCreator.subtitle')}</p>
                 </div>
             </div>
 
             <div className="px-5 space-y-6">
                 <div className="gradient-card rounded-2xl p-5 border border-dark-border/50">
-                    <h3 className="text-sm font-semibold mb-3">1. Gambar Awal (Wajib)</h3>
+                    <h3 className="text-sm font-semibold mb-3">{t('charCreator.avatarLabel')}</h3>
                     <div className="flex flex-col items-center gap-4">
                         <label className="w-32 h-32 rounded-2xl border-2 border-dashed border-dark-border flex flex-col items-center justify-center bg-dark/30 cursor-pointer overflow-hidden transition hover:border-primary/50 relative">
                             <input type="file" accept="image/*" onChange={handleBaseImageUpload} className="hidden" />
@@ -154,7 +156,7 @@ export default function CharacterCreator() {
                             )}
                         </label>
                         <p className="text-xs text-dark-muted text-center max-w-[250px]">
-                            Gunakan gambar berlatar belakang transparan untuk hasil terbaik.
+                            {t('charCreator.avatarHelp')}
                         </p>
                     </div>
                 </div>
@@ -162,10 +164,10 @@ export default function CharacterCreator() {
                 <div className="gradient-card rounded-2xl p-5 border border-dark-border/50">
                     <div className="flex items-center gap-2 mb-3">
                         <ImageIcon size={16} className="text-primary-light" />
-                        <h3 className="text-sm font-semibold">2. Manual Ekspresi (Opsional)</h3>
+                        <h3 className="text-sm font-semibold">{t('charCreator.expressionsLabel')}</h3>
                     </div>
                     <p className="text-xs text-dark-muted mb-4">
-                        Upload variasi gambar asistenmu (senang, sedih, marah) jika ada.
+                        {t('charCreator.expressionsHelp')}
                     </p>
 
                     <div className="grid grid-cols-3 gap-3 mt-5">
@@ -204,8 +206,8 @@ export default function CharacterCreator() {
                                     onKeyDown={e => e.key === 'Enter' && handleAddEmotion()}
                                 />
                                 <div className="flex gap-1 w-full justify-between">
-                                    <button onClick={() => setIsAddingEmotion(false)} className="text-[10px] text-dark-muted hover:text-white">Batal</button>
-                                    <button onClick={handleAddEmotion} className="text-[10px] text-primary-light font-medium">Tambah</button>
+                                    <button onClick={() => setIsAddingEmotion(false)} className="text-[10px] text-dark-muted hover:text-white">{t('charCreator.cancel')}</button>
+                                    <button onClick={handleAddEmotion} className="text-[10px] text-primary-light font-medium">{t('charCreator.add')}</button>
                                 </div>
                             </div>
                         ) : (
@@ -214,43 +216,42 @@ export default function CharacterCreator() {
                                 className="w-full aspect-square rounded-xl border border-dashed border-dark-border/50 flex flex-col items-center justify-center bg-dark/30 hover:border-primary/50 transition text-dark-muted hover:text-primary-light gap-1"
                             >
                                 <Plus size={16} />
-                                <span className="text-[10px]">Emosi Lain</span>
+                                <span className="text-[10px]">{t('charCreator.addExpressionBtn')}</span>
                             </button>
                         )}
                     </div>
                 </div>
 
                 <div className="gradient-card rounded-2xl p-5 border border-dark-border/50 space-y-4">
-                    <h3 className="text-sm font-semibold">3. Detail Karakter</h3>
+                    <h3 className="text-sm font-semibold">{t('charCreator.basicInfoLabel')}</h3>
                     
                     <div>
-                        <label className="text-xs text-dark-muted font-medium mb-1.5 block">Nama Karakter</label>
+                        <label className="text-xs text-dark-muted font-medium mb-1.5 block">{t('charCreator.aiName')}</label>
                         <input
                             type="text"
                             value={name}
                             onChange={e => setName(e.target.value)}
-                            placeholder="Contoh: Kucing Galak"
+                            placeholder={t('charCreator.aiNamePlaceholder')}
                             className="w-full bg-dark/50 border border-dark-border rounded-xl px-4 py-3 text-sm text-dark-text focus:outline-none focus:border-primary/50 transition"
                         />
                     </div>
 
                     <div>
-                        <label className="text-xs text-dark-muted font-medium mb-1.5 block">Kepribadian (Singkat)</label>
+                        <label className="text-xs text-dark-muted font-medium mb-1.5 block">{t('charCreator.roleplayPrompt')}</label>
                         <input
                             type="text"
                             value={personality}
                             onChange={e => setPersonality(e.target.value)}
-                            placeholder="Contoh: Sangat strict, suka memarahi"
                             className="w-full bg-dark/50 border border-dark-border rounded-xl px-4 py-3 text-sm text-dark-text focus:outline-none focus:border-primary/50 transition"
                         />
                     </div>
 
                     <div>
-                        <label className="text-xs text-dark-muted font-medium mb-1.5 block">Prompt / Gaya Bicara (Untuk AI)</label>
+                        <label className="text-xs text-dark-muted font-medium mb-1.5 block">{t('charCreator.roleplayPrompt')}</label>
                         <textarea
                             value={promptStyle}
                             onChange={e => setPromptStyle(e.target.value)}
-                            placeholder="Kamu adalah kucing yang pemarah, bicara pakai bahasa gaul..."
+                            placeholder={t('charCreator.roleplayPlaceholder')}
                             rows={3}
                             className="w-full bg-dark/50 border border-dark-border rounded-xl px-4 py-3 text-sm text-dark-text focus:outline-none focus:border-primary/50 transition resize-none"
                         />
@@ -263,7 +264,7 @@ export default function CharacterCreator() {
                     className="w-full py-4 rounded-2xl font-bold text-white text-base flex items-center justify-center gap-2 transition-all duration-300 gradient-primary shadow-lg shadow-primary/30 disabled:opacity-80"
                 >
                     <Save size={18} />
-                    {saveStatus || 'Simpan Karakter'}
+                    {saveStatus === 'Menyimpan...' ? t('charCreator.creating') : saveStatus === 'Tersimpan!' ? t('charCreator.success') : t('charCreator.saveBtn')}
                 </button>
             </div>
         </div>

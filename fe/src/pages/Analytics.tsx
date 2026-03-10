@@ -11,10 +11,12 @@ import {
   getCategoryTotals,
   getPercentage,
 } from '../utils/formatters';
+import { useTranslation } from 'react-i18next';
 
 export default function Analytics() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
+  const { t } = useTranslation();
 
   useEffect(() => {
     setTransactions(storage.getTransactions());
@@ -40,8 +42,8 @@ export default function Analytics() {
     <div className="min-h-screen pb-24">
       {/* Header */}
       <div className="px-5 pt-6 pb-3">
-        <h1 className="text-xl font-display font-bold">Analitik</h1>
-        <p className="text-dark-muted text-xs mt-0.5">Pantau pola keuanganmu</p>
+        <h1 className="text-xl font-display font-bold">{t('analytics.title')}</h1>
+        <p className="text-dark-muted text-xs mt-0.5">{t('analytics.overview')}</p>
       </div>
 
       {/* Month Selector */}
@@ -66,15 +68,15 @@ export default function Analytics() {
       {/* Summary Cards */}
       <div className="px-5 mb-5 grid grid-cols-3 gap-3">
         <div className="gradient-card rounded-2xl p-3 border border-dark-border/50 text-center">
-          <p className="text-[10px] text-dark-muted mb-1">Masuk</p>
+          <p className="text-[10px] text-dark-muted mb-1">{t('dashboard.income')}</p>
           <p className="text-sm font-bold text-success">{formatCurrency(income)}</p>
         </div>
         <div className="gradient-card rounded-2xl p-3 border border-dark-border/50 text-center">
-          <p className="text-[10px] text-dark-muted mb-1">Keluar</p>
+          <p className="text-[10px] text-dark-muted mb-1">{t('dashboard.expense')}</p>
           <p className="text-sm font-bold text-danger">{formatCurrency(expense)}</p>
         </div>
         <div className="gradient-card rounded-2xl p-3 border border-dark-border/50 text-center">
-          <p className="text-[10px] text-dark-muted mb-1">Sisa</p>
+          <p className="text-[10px] text-dark-muted mb-1">{t('analytics.netSavings')}</p>
           <p className={`text-sm font-bold ${balance >= 0 ? 'text-success' : 'text-danger'}`}>
             {formatCurrency(balance)}
           </p>
@@ -85,7 +87,7 @@ export default function Analytics() {
       {expenseTotals.length > 0 && (
         <div className="px-5 mb-5">
           <div className="gradient-card rounded-2xl p-5 border border-dark-border/50">
-            <h3 className="text-sm font-semibold mb-4">💸 Pengeluaran per Kategori</h3>
+            <h3 className="text-sm font-semibold mb-4">💸 {t('analytics.expenseByCategory')}</h3>
 
             {/* Visual donut */}
             <div className="flex items-center justify-center mb-5">
@@ -132,7 +134,7 @@ export default function Analytics() {
                       className="w-3 h-3 rounded-full shrink-0"
                       style={{ backgroundColor: pieColors[i % pieColors.length] }}
                     />
-                    <span className="text-sm flex-1">{cat.emoji} {cat.label}</span>
+                    <span className="text-sm flex-1">{cat.emoji} {t('category.' + cat.value)}</span>
                     <span className="text-xs text-dark-muted">{pct}%</span>
                     <span className="text-sm font-semibold w-28 text-right">{formatCurrency(item.amount)}</span>
                   </div>
@@ -147,7 +149,7 @@ export default function Analytics() {
       {incomeTotals.length > 0 && (
         <div className="px-5 mb-5">
           <div className="gradient-card rounded-2xl p-5 border border-dark-border/50">
-            <h3 className="text-sm font-semibold mb-4">💰 Pemasukan per Kategori</h3>
+            <h3 className="text-sm font-semibold mb-4">💰 {t('txForm.incomeBtn')} / {t('txForm.categoryLabel')}</h3>
             <div className="space-y-3">
               {incomeTotals.map((item, i) => {
                 const cat = getCategoryInfo(item.category as any);
@@ -155,7 +157,7 @@ export default function Analytics() {
                 return (
                   <div key={item.category}>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm">{cat.emoji} {cat.label}</span>
+                      <span className="text-sm">{cat.emoji} {t('category.' + cat.value)}</span>
                       <span className="text-sm font-semibold">{formatCurrency(item.amount)}</span>
                     </div>
                     <div className="h-2 bg-dark/50 rounded-full overflow-hidden">
@@ -178,8 +180,7 @@ export default function Analytics() {
       {monthTx.length === 0 && (
         <div className="text-center py-16">
           <p className="text-4xl mb-3">📊</p>
-          <p className="text-dark-muted text-sm">Belum ada data bulan ini</p>
-          <p className="text-dark-muted/60 text-xs mt-1">Tambahkan transaksi untuk melihat analitik</p>
+          <p className="text-dark-muted text-sm">{t('transactions.noData')}</p>
         </div>
       )}
     </div>

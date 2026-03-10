@@ -15,12 +15,14 @@ import {
 import TransactionForm from '../components/TransactionForm';
 import TransactionCard from '../components/TransactionCard';
 import DashboardCharacter from '../components/DashboardCharacter';
+import { useTranslation } from 'react-i18next';
 
 export default function Dashboard() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [settings] = useState(storage.getSettings());
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const currentMonth = getCurrentMonth();
 
@@ -50,7 +52,7 @@ export default function Dashboard() {
     <div className="min-h-screen pb-24">
       {/* Header */}
       <div className="px-5 pt-6 pb-4">
-        <p className="text-dark-muted text-sm">Halo, {settings.name} 👋</p>
+        <p className="text-dark-muted text-sm">{t('dashboard.greeting', { name: settings.name })}</p>
         <h1 className="text-xl font-display font-bold mt-1">WifeyMoney</h1>
       </div>
 
@@ -72,7 +74,7 @@ export default function Dashboard() {
                 <TrendingUp size={16} className="text-white" />
               </div>
               <div>
-                <p className="text-[10px] text-white/60">Masuk</p>
+                <p className="text-[10px] text-white/60">{t('dashboard.income')}</p>
                 <p className="text-sm font-bold text-white">{formatCurrency(income)}</p>
               </div>
             </div>
@@ -81,7 +83,7 @@ export default function Dashboard() {
                 <TrendingDown size={16} className="text-white" />
               </div>
               <div>
-                <p className="text-[10px] text-white/60">Keluar</p>
+                <p className="text-[10px] text-white/60">{t('dashboard.expense')}</p>
                 <p className="text-sm font-bold text-white">{formatCurrency(expense)}</p>
               </div>
             </div>
@@ -96,7 +98,7 @@ export default function Dashboard() {
             <div className="flex justify-between items-center mb-2">
               <div className="flex items-center gap-2">
                 <Wallet size={16} className="text-primary-light" />
-                <span className="text-sm font-medium">Budget Bulanan</span>
+                <span className="text-sm font-medium">{t('dashboard.monthlyBudget')}</span>
               </div>
               <span className={`text-xs font-bold ${budgetUsed > 80 ? 'text-danger' : budgetUsed > 50 ? 'text-warning' : 'text-success'}`}>
                 {budgetUsed}%
@@ -111,7 +113,7 @@ export default function Dashboard() {
               />
             </div>
             <p className="text-xs text-dark-muted mt-2">
-              {formatCurrency(expense)} dari {formatCurrency(settings.monthlyBudget)}
+              {formatCurrency(expense)} {t('dashboard.from')} {formatCurrency(settings.monthlyBudget)}
             </p>
           </div>
         </div>
@@ -120,7 +122,7 @@ export default function Dashboard() {
       {/* Mini Chart */}
       <div className="px-5 mb-5">
         <div className="gradient-card rounded-2xl p-4 border border-dark-border/50">
-          <h3 className="text-sm font-semibold mb-3">7 Hari Terakhir</h3>
+          <h3 className="text-sm font-semibold mb-3">{t('dashboard.last7Days')}</h3>
           <div className="flex items-end gap-1.5 h-20">
             {dailySummaries.map((day, i) => (
               <div key={i} className="flex-1 flex flex-col items-center gap-1">
@@ -148,20 +150,20 @@ export default function Dashboard() {
       {/* Recent Transactions */}
       <div className="px-5">
         <div className="flex justify-between items-center mb-3">
-          <h3 className="text-sm font-semibold">Transaksi Terakhir</h3>
+          <h3 className="text-sm font-semibold">{t('dashboard.recentTransactions')}</h3>
           <button
             onClick={() => navigate('/transactions')}
             className="text-xs text-primary-light flex items-center gap-1 hover:underline"
           >
-            Lihat Semua <ChevronRight size={14} />
+            {t('dashboard.seeAll')} <ChevronRight size={14} />
           </button>
         </div>
 
         {recentTransactions.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-4xl mb-3">💸</p>
-            <p className="text-dark-muted text-sm">Belum ada transaksi</p>
-            <p className="text-dark-muted/60 text-xs mt-1">Tap + untuk mulai mencatat</p>
+            <p className="text-dark-muted text-sm">{t('dashboard.noTransactions')}</p>
+            <p className="text-dark-muted/60 text-xs mt-1">{t('dashboard.tapToAdd')}</p>
           </div>
         ) : (
           <div className="space-y-2">

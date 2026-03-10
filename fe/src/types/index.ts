@@ -24,6 +24,7 @@ export interface UserSettings {
     name: string;
     monthlyBudget: number;
     currency: string;
+    language?: string;
     useCompactCurrency?: boolean;
     useBudget?: boolean;
     useQuickRoast?: boolean;
