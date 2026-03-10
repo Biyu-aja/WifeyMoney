@@ -32,6 +32,7 @@ export default function Chat() {
   const [selectedCharAvatarUrl, setSelectedCharAvatarUrl] = useState<string | null>(null);
 
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const settings = storage.getSettings();
   const lang = settings.language || 'id';
@@ -79,7 +80,13 @@ export default function Chat() {
   }, [activeSessionId, sessions]);
 
   useEffect(() => {
-    endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    } else {
+      endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+    // ensure no implicit window scroll
+    window.scrollTo(0, 0);
   }, [messages]);
 
   const currentMonth = getCurrentMonth();
@@ -285,7 +292,7 @@ export default function Chat() {
   };
 
   return (
-    <div className="flex flex-col h-screen max-w-lg mx-auto bg-dark pb-[max(env(safe-area-inset-bottom),70px)] relative overflow-hidden">
+    <div className="fixed inset-0 w-full flex flex-col h-[100dvh] max-w-lg mx-auto bg-dark pb-[max(env(safe-area-inset-bottom),70px)] z-10 overflow-hidden">
       
       {/* Sidebar Overlay */}
       {isSidebarOpen && (
@@ -375,7 +382,7 @@ export default function Chat() {
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center space-y-3 opacity-60">
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary-light mb-2">
