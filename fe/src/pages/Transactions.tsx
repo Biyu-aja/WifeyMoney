@@ -12,6 +12,7 @@ export default function Transactions() {
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<TransactionType | 'all'>('all');
   const [showForm, setShowForm] = useState(false);
+  const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -19,8 +20,20 @@ export default function Transactions() {
   }, []);
 
   const handleSave = (transaction: Transaction) => {
-    const updated = storage.addTransaction(transaction);
+    let updated;
+    if (editingTx) {
+      updated = storage.updateTransaction(transaction);
+    } else {
+      updated = storage.addTransaction(transaction);
+    }
     setTransactions(updated);
+    setEditingTx(null);
+    setShowForm(false);
+  };
+
+  const handleEdit = (transaction: Transaction) => {
+    setEditingTx(transaction);
+    setShowForm(true);
   };
 
   const handleDelete = (id: string) => {
@@ -99,7 +112,7 @@ export default function Transactions() {
               </p>
               <div className="space-y-2">
                 {grouped[date].map(t => (
-                  <TransactionCard key={t.id} transaction={t} onDelete={handleDelete} />
+                  <TransactionCard key={t.id} transaction={t} onDelete={handleDelete} onEdit={handleEdit} />
                 ))}
               </div>
             </div>
@@ -109,13 +122,16 @@ export default function Transactions() {
 
       {/* FAB */}
       <button
-        onClick={() => setShowForm(true)}
+        onClick={() => {
+          setEditingTx(null);
+          setShowForm(true);
+        }}
         className="fixed bottom-24 right-5 w-14 h-14 gradient-primary rounded-2xl shadow-lg shadow-primary/40 flex items-center justify-center active:scale-90 transition-transform z-40"
       >
         <Plus size={24} className="text-white" />
       </button>
 
-      <TransactionForm isOpen={showForm} onClose={() => setShowForm(false)} onSave={handleSave} />
+      <TransactionForm isOpen={showForm} onClose={() => { setShowForm(false); setEditingTx(null); }} onSave={handleSave} initialData={editingTx} />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, AlertTriangle, Trash2, MessageCircle, Menu, Plus, X, List, RefreshCw } from 'lucide-react';
+import { Send, AlertTriangle, Trash2, MessageCircle, Menu, Plus, X, List, RefreshCw, MoreVertical } from 'lucide-react';
 import type { Transaction } from '../types';
 import type { Character } from '../types/character';
 import { DEFAULT_CHARACTERS } from '../types/character';
@@ -24,7 +24,7 @@ export default function Chat() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [characters, setCharacters] = useState<Character[]>(DEFAULT_CHARACTERS);
@@ -42,6 +42,10 @@ export default function Chat() {
     loadSessions();
     setTransactions(storage.getTransactions());
     loadCharacters();
+
+    const closeMenu = () => setOpenMenuId(null);
+    window.addEventListener('click', closeMenu);
+    return () => window.removeEventListener('click', closeMenu);
   }, []);
 
   const loadSessions = async () => {
@@ -397,13 +401,11 @@ export default function Chat() {
           messages.map((msg, index) => (
             <div 
               key={msg.id} 
-              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} group relative`}
-              onMouseEnter={() => setHoveredMsgId(msg.id)}
-              onMouseLeave={() => setHoveredMsgId(null)}
+              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} relative`}
             >
               <div className={`flex max-w-[85%] gap-2 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                 {msg.role === 'assistant' && (
-                  <div className="w-8 h-8 shrink-0 rounded-full bg-dark-border flex items-center justify-center text-sm border border-primary/20 overflow-hidden">
+                  <div className="w-8 h-8 shrink-0 rounded-full bg-dark-border flex items-center justify-center text-sm border border-primary/20 overflow-hidden mt-1">
                     {selectedCharAvatarUrl ? (
                       <img src={selectedCharAvatarUrl} alt={selectedChar.name} className="w-full h-full object-cover" />
                     ) : (
@@ -412,36 +414,56 @@ export default function Chat() {
                   </div>
                 )}
                 
-                <div 
-                  className={`p-3 rounded-2xl text-sm leading-relaxed relative ${
-                    msg.role === 'user' 
-                      ? 'bg-primary-light text-dark font-medium rounded-tr-sm' 
-                      : 'bg-dark-border/60 text-dark-text rounded-tl-sm border border-dark-border'
-                  }`}
-                  style={{ whiteSpace: 'pre-wrap' }}
-                >
-                  {msg.content}
+                <div className={`flex flex-col gap-1 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                  <div 
+                    className={`p-3 rounded-2xl text-sm leading-relaxed relative ${
+                      msg.role === 'user' 
+                        ? 'bg-primary-light text-dark font-medium rounded-tr-sm' 
+                        : 'bg-dark-border/60 text-dark-text rounded-tl-sm border border-dark-border'
+                    }`}
+                    style={{ whiteSpace: 'pre-wrap' }}
+                  >
+                    {msg.content}
+                  </div>
 
-                  {hoveredMsgId === msg.id && (
-                     <div className={`absolute -bottom-5 ${msg.role === 'user' ? 'right-0' : 'left-0'} flex items-center gap-1 bg-dark/90 backdrop-blur border border-dark-border rounded-lg p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-10`}>
-                        {msg.role === 'assistant' && (
-                           <button 
-                             onClick={() => handleRegenerate(index)} 
-                             className="p-1.5 text-dark-muted hover:text-primary transition-colors rounded-md hover:bg-dark-border/50"
-                             title="Regenerate"
-                           >
-                             <RefreshCw size={13} />
-                           </button>
-                        )}
-                        <button 
-                          onClick={() => handleDeleteMessage(msg.id)} 
-                          className="p-1.5 text-dark-muted hover:text-danger transition-colors rounded-md hover:bg-dark-border/50"
-                          title="Hapus"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                     </div>
-                  )}
+                  <div className={`relative flex items-center ${msg.role === 'user' ? 'self-end' : 'self-start'}`}>
+                      <button
+                        onClick={(e) => {
+                           e.stopPropagation();
+                           setOpenMenuId(openMenuId === msg.id ? null : msg.id);
+                        }}
+                        className="p-1 text-dark-muted hover:text-white hover:bg-dark-border/50 rounded-full transition-colors"
+                      >
+                        <MoreVertical size={14} />
+                      </button>
+
+                      {openMenuId === msg.id && (
+                         <div className={`absolute bottom-full mb-1 ${msg.role === 'user' ? 'right-0' : 'left-0'} flex items-center gap-1 bg-dark/90 backdrop-blur border border-dark-border rounded-lg p-1 shadow-lg z-10`}>
+                            {msg.role === 'assistant' && (
+                               <button 
+                                 onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRegenerate(index);
+                                 }} 
+                                 className="flex items-center gap-1.5 p-1.5 text-dark-muted hover:text-primary transition-colors rounded-md hover:bg-dark-border/50 whitespace-nowrap text-xs"
+                                 title="Regenerate"
+                               >
+                                 <RefreshCw size={13} /> Regenerate
+                               </button>
+                            )}
+                            <button 
+                              onClick={(e) => {
+                                 e.stopPropagation();
+                                 handleDeleteMessage(msg.id);
+                              }} 
+                              className="flex items-center gap-1.5 p-1.5 text-dark-muted hover:text-danger transition-colors rounded-md hover:bg-dark-border/50 whitespace-nowrap text-xs"
+                              title="Delete"
+                            >
+                              <Trash2 size={13} /> Delete
+                            </button>
+                         </div>
+                      )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -474,7 +496,7 @@ export default function Chat() {
           </div>
         )}
 
-        <div ref={endOfMessagesRef} />
+        <div ref={endOfMessagesRef} className="h-32 shrink-0 w-full" />
       </div>
 
       {/* Input Area */}

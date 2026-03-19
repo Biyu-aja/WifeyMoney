@@ -20,6 +20,7 @@ import { useTranslation } from 'react-i18next';
 export default function Dashboard() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [settings] = useState(storage.getSettings());
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -36,8 +37,20 @@ export default function Dashboard() {
   const dailySummaries = getDailySummaries(transactions, 7);
 
   const handleSave = (transaction: Transaction) => {
-    const updated = storage.addTransaction(transaction);
+    let updated;
+    if (editingTx) {
+      updated = storage.updateTransaction(transaction);
+    } else {
+      updated = storage.addTransaction(transaction);
+    }
     setTransactions(updated);
+    setEditingTx(null);
+    setShowForm(false);
+  };
+
+  const handleEdit = (transaction: Transaction) => {
+    setEditingTx(transaction);
+    setShowForm(true);
   };
 
   const handleDelete = (id: string) => {
@@ -168,7 +181,7 @@ export default function Dashboard() {
         ) : (
           <div className="space-y-2">
             {recentTransactions.map(t => (
-              <TransactionCard key={t.id} transaction={t} onDelete={handleDelete} />
+              <TransactionCard key={t.id} transaction={t} onDelete={handleDelete} onEdit={handleEdit} />
             ))}
           </div>
         )}
@@ -176,7 +189,10 @@ export default function Dashboard() {
 
       {/* FAB */}
       <button
-        onClick={() => setShowForm(true)}
+        onClick={() => {
+          setEditingTx(null);
+          setShowForm(true);
+        }}
         className="fixed bottom-24 right-5 w-14 h-14 gradient-primary rounded-2xl shadow-lg shadow-primary/40 flex items-center justify-center active:scale-90 transition-transform animate-pulse-glow z-40"
       >
         <Plus size={24} className="text-white" />
@@ -184,8 +200,9 @@ export default function Dashboard() {
 
       <TransactionForm
         isOpen={showForm}
-        onClose={() => setShowForm(false)}
+        onClose={() => { setShowForm(false); setEditingTx(null); }}
         onSave={handleSave}
+        initialData={editingTx}
       />
 
       {settings.useQuickRoast !== false && <DashboardCharacter />}

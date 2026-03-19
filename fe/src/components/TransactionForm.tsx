@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, TrendingUp, TrendingDown } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import type { Transaction, TransactionType, Category } from '../types';
@@ -10,9 +10,10 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSave: (transaction: Transaction) => void;
+  initialData?: Transaction | null;
 }
 
-export default function TransactionForm({ isOpen, onClose, onSave }: Props) {
+export default function TransactionForm({ isOpen, onClose, onSave, initialData }: Props) {
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState(0);
   const [category, setCategory] = useState<Category | ''>('');
@@ -22,17 +23,36 @@ export default function TransactionForm({ isOpen, onClose, onSave }: Props) {
 
   const categories = type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
 
+
+  useEffect(() => {
+    if (isOpen) {
+      if (initialData) {
+        setType(initialData.type);
+        setAmount(initialData.amount);
+        setCategory(initialData.category);
+        setDescription(initialData.description);
+        setDate(initialData.date);
+      } else {
+        setType('expense');
+        setAmount(0);
+        setCategory('');
+        setDescription('');
+        setDate(new Date().toISOString().split('T')[0]);
+      }
+    }
+  }, [isOpen, initialData]);
+
   const handleSubmit = () => {
     if (!amount || !category) return;
 
     const transaction: Transaction = {
-      id: uuidv4(),
+      id: initialData?.id || uuidv4(),
       type,
       amount,
       category: category as Category,
       description: description || categories.find(c => c.value === category)?.label || '',
       date,
-      createdAt: new Date().toISOString(),
+      createdAt: initialData?.createdAt || new Date().toISOString(),
     };
 
     onSave(transaction);
@@ -67,7 +87,11 @@ export default function TransactionForm({ isOpen, onClose, onSave }: Props) {
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3">
-          <h2 className="text-lg font-display font-bold text-dark-text">{type === 'expense' ? t('txForm.titleExpense') : t('txForm.titleIncome')}</h2>
+          <h2 className="text-lg font-display font-bold text-dark-text">
+            {initialData 
+              ? (type === 'expense' ? 'Edit Pengeluaran' : 'Edit Pemasukan') 
+              : (type === 'expense' ? t('txForm.titleExpense') : t('txForm.titleIncome'))}
+          </h2>
           <button
             onClick={() => { resetForm(); onClose(); }}
             className="p-2 rounded-full hover:bg-dark-border/50 transition"

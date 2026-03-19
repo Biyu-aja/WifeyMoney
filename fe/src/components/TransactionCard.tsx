@@ -1,4 +1,4 @@
-import { Trash2 } from 'lucide-react';
+import { Trash2, Edit2 } from 'lucide-react';
 import type { Transaction } from '../types';
 import { getCategoryInfo } from '../types';
 import { formatCurrency, formatRelativeDate } from '../utils/formatters';
@@ -7,9 +7,10 @@ import { useTranslation } from 'react-i18next';
 interface Props {
   transaction: Transaction;
   onDelete: (id: string) => void;
+  onEdit?: (transaction: Transaction) => void;
 }
 
-export default function TransactionCard({ transaction, onDelete }: Props) {
+export default function TransactionCard({ transaction, onDelete, onEdit }: Props) {
   const cat = getCategoryInfo(transaction.category);
   const isExpense = transaction.type === 'expense';
   const { t } = useTranslation();
@@ -29,14 +30,27 @@ export default function TransactionCard({ transaction, onDelete }: Props) {
         <p className="text-xs text-dark-muted mt-0.5">{t('category.' + cat.value)} • {formatRelativeDate(transaction.date)}</p>
       </div>
 
-      {/* Amount */}
-      <div className="text-right flex items-center gap-2">
+      {/* Amount & Actions Container */}
+      <div className="text-right flex flex-col justify-center items-end ml-2">
         <span className={`font-bold text-sm ${isExpense ? 'text-danger' : 'text-success'}`}>
           {isExpense ? '-' : '+'}{formatCurrency(transaction.amount)}
         </span>
+      </div>
+      {/* Actions */}
+      <div className="flex items-center gap-1.5 shrink-0 pl-1">
+        {onEdit && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onEdit(transaction); }}
+            className="p-1.5 rounded-lg text-dark-muted hover:text-primary hover:bg-primary/20 bg-dark-border/20 transition-all"
+            title="Edit"
+          >
+            <Edit2 size={14} />
+          </button>
+        )}
         <button
           onClick={(e) => { e.stopPropagation(); onDelete(transaction.id); }}
-          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-danger/20 text-dark-muted hover:text-danger transition-all"
+          className="p-1.5 rounded-lg text-dark-muted hover:text-danger hover:bg-danger/20 bg-dark-border/20 transition-all"
+          title="Delete"
         >
           <Trash2 size={14} />
         </button>

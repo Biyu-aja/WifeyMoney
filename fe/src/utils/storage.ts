@@ -21,6 +21,16 @@ export const storage = {
         return transactions;
     },
 
+    updateTransaction(updatedTransaction: Transaction): Transaction[] {
+        const transactions = this.getTransactions();
+        const index = transactions.findIndex(t => t.id === updatedTransaction.id);
+        if (index !== -1) {
+            transactions[index] = updatedTransaction;
+            this.saveTransactions(transactions);
+        }
+        return transactions;
+    },
+
     deleteTransaction(id: string): Transaction[] {
         const transactions = this.getTransactions().filter(t => t.id !== id);
         this.saveTransactions(transactions);
