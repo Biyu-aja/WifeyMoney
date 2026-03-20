@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { X, TrendingUp, TrendingDown } from 'lucide-react';
+import { X, TrendingUp, TrendingDown, Plus, Check } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import type { Transaction, TransactionType, Category } from '../types';
 import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '../types';
 import CurrencyInput from './CurrencyInput';
+import { storage } from '../utils/storage';
 import { useTranslation } from 'react-i18next';
 
 interface Props {
@@ -19,13 +20,20 @@ export default function TransactionForm({ isOpen, onClose, onSave, initialData }
   const [category, setCategory] = useState<Category | ''>('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatEmoji, setNewCatEmoji] = useState('✨');
+  const [customCategories, setCustomCategories] = useState<any[]>([]);
+
   const { t } = useTranslation();
 
-  const categories = type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
-
+  const baseCategories = type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+  const activeCustomCategories = customCategories.filter(c => c.type === type);
+  const displayedCategories = [...baseCategories, ...activeCustomCategories];
 
   useEffect(() => {
     if (isOpen) {
+      setCustomCategories(storage.getCustomCategories());
       if (initialData) {
         setType(initialData.type);
         setAmount(initialData.amount);
@@ -38,9 +46,26 @@ export default function TransactionForm({ isOpen, onClose, onSave, initialData }
         setCategory('');
         setDescription('');
         setDate(new Date().toISOString().split('T')[0]);
+        setIsAddingCategory(false);
+        setNewCatName('');
       }
     }
   }, [isOpen, initialData]);
+
+  const handleSaveNewCategory = () => {
+    if (!newCatName.trim()) return;
+    const newCat = {
+      value: `custom_${Date.now()}`,
+      label: newCatName.trim(),
+      emoji: newCatEmoji || '✨',
+      type
+    };
+    storage.saveCustomCategory(newCat);
+    setCustomCategories(prev => [...prev, newCat]);
+    setCategory(newCat.value);
+    setIsAddingCategory(false);
+    setNewCatName('');
+  };
 
   const handleSubmit = () => {
     if (!amount || !category) return;
@@ -50,7 +75,7 @@ export default function TransactionForm({ isOpen, onClose, onSave, initialData }
       type,
       amount,
       category: category as Category,
-      description: description || categories.find(c => c.value === category)?.label || '',
+      description: description || displayedCategories.find(c => c.value === category)?.label || '',
       date,
       createdAt: initialData?.createdAt || new Date().toISOString(),
     };
@@ -150,21 +175,63 @@ export default function TransactionForm({ isOpen, onClose, onSave, initialData }
           <div>
             <label className="text-xs text-dark-muted font-medium mb-2 block">{t('txForm.categoryLabel')}</label>
             <div className="grid grid-cols-3 gap-2">
-              {categories.map((cat) => (
+              {displayedCategories.map((cat) => (
                 <button
                   key={cat.value}
                   onClick={() => setCategory(cat.value)}
-                  className={`flex flex-col items-center gap-1 p-3 rounded-2xl border transition-all duration-200 ${
+                  className={`flex flex-col items-center justify-center gap-1 p-3 rounded-2xl border transition-all duration-200 h-20 ${
                     category === cat.value
                       ? 'border-primary bg-primary/20 scale-[1.02]'
-                      : 'border-dark-border hover:border-dark-muted/50'
+                      : 'border-dark-border hover:border-dark-muted/50 bg-dark-card/50'
                   }`}
                 >
-                  <span className="text-xl">{cat.emoji}</span>
-                  <span className="text-[11px] font-medium text-dark-text">{t('category.' + cat.value)}</span>
+                  <span className="text-2xl mt-1 leading-none">{cat.emoji}</span>
+                  <span className="text-[11px] font-medium text-dark-text mt-auto text-center line-clamp-1 break-all w-full px-1">
+                    {cat.value.startsWith('custom_') ? cat.label : (t(`category.${cat.value}`, { defaultValue: cat.label }) as string)}
+                  </span>
                 </button>
               ))}
+              <button
+                onClick={() => setIsAddingCategory(true)}
+                className="flex flex-col items-center justify-center gap-1 p-3 rounded-2xl border border-dark-border border-dashed hover:border-primary/50 text-dark-muted hover:text-primary transition-all duration-200 h-20 bg-dark-card/30"
+              >
+                <span className="text-xl mt-1"><Plus size={20} /></span>
+                <span className="text-[11px] font-medium mt-auto">Tambah</span>
+              </button>
             </div>
+            {isAddingCategory && (
+              <div className="mt-3 p-3 bg-dark-card rounded-2xl border border-dark-border flex gap-2 items-center animate-fade-in shadow-xl shadow-black/20">
+                <input
+                  type="text"
+                  value={newCatEmoji}
+                  onChange={e => setNewCatEmoji(e.target.value)}
+                  className="w-12 h-10 bg-dark/80 border border-dark-border rounded-xl text-center text-xl focus:outline-none focus:border-primary/50 shrink-0"
+                  placeholder="✨"
+                  maxLength={2}
+                />
+                <input
+                  type="text"
+                  value={newCatName}
+                  onChange={e => setNewCatName(e.target.value)}
+                  className="flex-1 h-10 bg-dark/80 border border-dark-border rounded-xl px-3 text-sm text-dark-text focus:outline-none focus:border-primary/50 min-w-0"
+                  placeholder="Nama Kategori"
+                />
+                <div className="flex gap-1 shrink-0">
+                  <button 
+                    onClick={handleSaveNewCategory}
+                    className="w-10 h-10 flex items-center justify-center bg-primary text-dark rounded-xl hover:bg-primary-light transition-colors"
+                  >
+                    <Check size={18} />
+                  </button>
+                  <button 
+                    onClick={() => setIsAddingCategory(false)}
+                    className="w-10 h-10 flex items-center justify-center bg-dark border border-dark-border text-dark-muted rounded-xl hover:text-danger hover:bg-danger/10 transition-colors"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Description */}

@@ -69,4 +69,15 @@ export const storage = {
         }
         localStorage.setItem(BUDGETS_KEY, JSON.stringify(budgets));
     },
+
+    getCustomCategories(): any[] {
+        const data = localStorage.getItem('wifey_custom_categories');
+        return data ? JSON.parse(data) : [];
+    },
+
+    saveCustomCategory(category: any): void {
+        const categories = this.getCustomCategories();
+        categories.push(category);
+        localStorage.setItem('wifey_custom_categories', JSON.stringify(categories));
+    },
 };

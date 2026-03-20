@@ -27,7 +27,7 @@ export default function TransactionCard({ transaction, onDelete, onEdit }: Props
       {/* Info */}
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-sm text-dark-text truncate">{transaction.description}</p>
-        <p className="text-xs text-dark-muted mt-0.5">{t('category.' + cat.value)} • {formatRelativeDate(transaction.date)}</p>
+        <p className="text-xs text-dark-muted mt-0.5">{t('category.' + cat.value, { defaultValue: cat.label }) as string} • {formatRelativeDate(transaction.date)}</p>
       </div>
 
       {/* Amount & Actions Container */}

@@ -1,9 +1,13 @@
 export type TransactionType = 'income' | 'expense';
 
-export type Category =
-    | 'salary' | 'freelance' | 'gift' | 'investment' | 'other_income'
-    | 'food' | 'transport' | 'shopping' | 'bills' | 'entertainment'
-    | 'health' | 'education' | 'beauty' | 'household' | 'other_expense';
+export type Category = string;
+
+export interface CustomCategory {
+    value: string;
+    label: string;
+    emoji: string;
+    type: TransactionType;
+}
 
 export interface Transaction {
     id: string;
@@ -66,6 +70,19 @@ export const EXPENSE_CATEGORIES: { value: Category; label: string; emoji: string
 
 export const ALL_CATEGORIES = [...INCOME_CATEGORIES, ...EXPENSE_CATEGORIES];
 
-export function getCategoryInfo(category: Category) {
-    return ALL_CATEGORIES.find(c => c.value === category) || { value: category, label: category, emoji: '📦' };
+export function getCategoryInfo(category: string) {
+    const allDefault = [...INCOME_CATEGORIES, ...EXPENSE_CATEGORIES];
+    const found = allDefault.find(c => c.value === category);
+    if (found) return found;
+
+    try {
+        const customData = localStorage.getItem('wifey_custom_categories');
+        if (customData) {
+            const custom = JSON.parse(customData);
+            const foundCustom = custom.find((c: any) => c.value === category);
+            if (foundCustom) return foundCustom;
+        }
+    } catch (e) {}
+
+    return { value: category, label: category, emoji: '📦' };
 }

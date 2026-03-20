@@ -62,7 +62,8 @@ export default function Chat() {
     setCharacters(all);
   };
 
-  const selectedChar = characters.find(c => c.id === selectedCharId) || characters[0];
+  const fallbackChar: Character = { id: 'fallback', name: 'Wifey AI', avatar: '🤖', promptStyle: 'Kamu adalah asisten pengatur keuangan.', color: '#000', isDefault: true, personality: '' };
+  const selectedChar = characters.find(c => c.id === selectedCharId) || characters[0] || fallbackChar;
 
   useEffect(() => {
     if (selectedChar?.avatar && selectedChar.avatar.length > 4 && selectedChar.avatar.includes('.')) {
