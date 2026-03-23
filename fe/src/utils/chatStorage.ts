@@ -2,6 +2,12 @@ export interface ChatMessage {
     id: string;
     role: 'user' | 'assistant' | 'system';
     content: string;
+    expression?: string;
+    parameters?: {
+        affectionDelta?: number;
+        trustDelta?: number;
+        mood?: string;
+    };
 }
 
 export interface ChatSession {
@@ -9,6 +15,9 @@ export interface ChatSession {
     title: string;
     updatedAt: number;
     messages: ChatMessage[];
+    affection: number; // accumulated value
+    trust: number;     // accumulated value
+    latestMood: string;
 }
 
 const DIR_NAME = 'wifey-chats';

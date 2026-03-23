@@ -17,6 +17,9 @@ const resources = {
                 aiBusy: 'Aduh, AI-nya lagi sibuk. Coba lagi sebentar ya! 😅',
                 onlineStatus: 'Online • Siap bantu atur duitmu',
                 defaultPlanMessage: 'Bantu aku buat rencana budgeting bulan ini.',
+                affection: 'Afeksi',
+                trust: 'Kepercayaan',
+                mood: 'Mood'
             },
             settings: {
                 title: 'Pengaturan',
@@ -178,6 +181,9 @@ const resources = {
                 aiBusy: 'AI is busy, please try again!',
                 onlineStatus: 'Online • Ready to help',
                 defaultPlanMessage: 'Help me plan my budget for this month.',
+                affection: 'Affection',
+                trust: 'Trust',
+                mood: 'Mood'
             },
             settings: {
                 title: 'Settings',

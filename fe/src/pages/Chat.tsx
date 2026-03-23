@@ -30,6 +30,7 @@ export default function Chat() {
   const [characters, setCharacters] = useState<Character[]>(DEFAULT_CHARACTERS);
   const [selectedCharId] = useState(characterStorage.getSelectedId());
   const [selectedCharAvatarUrl, setSelectedCharAvatarUrl] = useState<string | null>(null);
+  const [expressionUrls, setExpressionUrls] = useState<Record<string, string>>({});
 
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -73,6 +74,25 @@ export default function Chat() {
     } else {
       setSelectedCharAvatarUrl(null);
     }
+
+    if (selectedChar?.expressions) {
+      const loadExpressions = async () => {
+         const loaded: Record<string, string> = {};
+         for (const [key, val] of Object.entries(selectedChar.expressions || {})) {
+           if (val.length > 4 && val.includes('.')) {
+             const url = await characterStorage.loadAvatar(val);
+             if (url) loaded[key] = url;
+             else loaded[key] = val; // fallback for absolute URLs
+           } else {
+             loaded[key] = val; 
+           }
+         }
+         setExpressionUrls(loaded);
+      };
+      loadExpressions();
+    } else {
+      setExpressionUrls({});
+    }
   }, [selectedChar]);
 
   useEffect(() => {
@@ -105,7 +125,10 @@ export default function Chat() {
       id: Date.now().toString(),
       title: isBudgeting ? t('chat.budgetPlan') : t('chat.newChat'),
       updatedAt: Date.now(),
-      messages: []
+      messages: [],
+      affection: 50,
+      trust: 50,
+      latestMood: 'Biasa'
     };
     
     await chatStorage.saveSession(newSession);
@@ -141,7 +164,10 @@ export default function Chat() {
         id: Date.now().toString(),
         title: input.trim().substring(0, 30) + (input.length > 30 ? '...' : ''),
         updatedAt: Date.now(),
-        messages: []
+        messages: [],
+        affection: 50,
+        trust: 50,
+        latestMood: 'Biasa'
       };
       await chatStorage.saveSession(newSession);
       currentSessionId = newSession.id;
@@ -169,7 +195,10 @@ export default function Chat() {
       id: sessionId,
       title: userInput.substring(0, 30),
       updatedAt: Date.now(),
-      messages: []
+      messages: [],
+      affection: 50,
+      trust: 50,
+      latestMood: 'Biasa'
     };
     sessionToUpdate.messages = updatedMessages;
     sessionToUpdate.updatedAt = Date.now();
@@ -213,6 +242,10 @@ export default function Chat() {
         characterPrompt: selectedChar.promptStyle,
         recentTransactions,
         language: lang,
+        availableExpressions: selectedChar.expressions ? Object.keys(selectedChar.expressions) : ['normal'],
+        currentAffection: sessions.find(s => s.id === sessionId)?.affection ?? 50,
+        currentTrust: sessions.find(s => s.id === sessionId)?.trust ?? 50,
+        currentMood: sessions.find(s => s.id === sessionId)?.latestMood ?? 'Biasa'
       };
 
       const payload = {
@@ -234,7 +267,9 @@ export default function Chat() {
       const aiMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: data.reply
+        content: data.reply,
+        expression: data.expression,
+        parameters: data.parameters
       };
       
       setMessages(prev => {
@@ -242,6 +277,13 @@ export default function Chat() {
         const sessionToUpdate = sessions.find(s => s.id === sessionId);
         if (sessionToUpdate) {
           sessionToUpdate.messages = finalMessages;
+          if (data.parameters) {
+             sessionToUpdate.affection = Math.min(100, Math.max(0, (sessionToUpdate.affection || 50) + (data.parameters.affectionDelta || 0)));
+             sessionToUpdate.trust = Math.min(100, Math.max(0, (sessionToUpdate.trust || 50) + (data.parameters.trustDelta || 0)));
+             if (data.parameters.mood) {
+                sessionToUpdate.latestMood = data.parameters.mood;
+             }
+          }
           sessionToUpdate.updatedAt = Date.now();
           chatStorage.saveSession(sessionToUpdate).then(() => {
             loadSessions();
@@ -361,33 +403,53 @@ export default function Chat() {
       </div>
 
       {/* Header */}
-      <div className="px-3 py-3 border-b border-dark-border/50 flex items-center justify-between bg-dark/80 backdrop-blur-md sticky top-0 z-10 glass-strong">
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={() => setIsSidebarOpen(true)}
-            className="p-2 text-dark-text hover:bg-dark-border/50 rounded-xl transition-colors"
-          >
-            <Menu size={20} />
-          </button>
-          <div className="w-10 h-10 rounded-full bg-dark-border flex items-center justify-center overflow-hidden border border-primary/20 shrink-0">
-              {selectedCharAvatarUrl ? (
-                <img src={selectedCharAvatarUrl} alt={selectedChar.name} className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-xl">{selectedChar.avatar?.length <= 4 ? selectedChar.avatar : '🤖'}</span>
-              )}
-          </div>
-          <div className="truncate">
-            <h1 className="text-base font-bold flex items-center gap-1.5 truncate">
-              {selectedChar.name}
-              <div className="w-2 h-2 rounded-full bg-success animate-pulse shrink-0"></div>
-            </h1>
-            <p className="text-[10px] text-dark-muted truncate">{t('chat.onlineStatus')}</p>
+      <div className="px-3 py-3 border-b border-dark-border/50 flex flex-col bg-dark/80 backdrop-blur-md sticky top-0 z-10 glass-strong">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setIsSidebarOpen(true)}
+              className="p-2 text-dark-text hover:bg-dark-border/50 rounded-xl transition-colors"
+            >
+              <Menu size={20} />
+            </button>
+            <div className={`w-10 h-10 rounded-full bg-dark-border flex items-center justify-center overflow-hidden border-2 shrink-0 ${
+               activeSessionId && sessions.find(s => s.id === activeSessionId)?.latestMood === 'Senang' ? 'border-green-500/50' :
+               activeSessionId && sessions.find(s => s.id === activeSessionId)?.latestMood === 'Marah' ? 'border-red-500/50' : 'border-primary/20'
+            }`}>
+                {selectedCharAvatarUrl ? (
+                  <img src={selectedCharAvatarUrl} alt={selectedChar.name} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-xl">{selectedChar.avatar?.length <= 4 ? selectedChar.avatar : '🤖'}</span>
+                )}
+            </div>
+            <div className="truncate">
+              <h1 className="text-base font-bold flex items-center gap-1.5 truncate">
+                {selectedChar.name}
+                <div className="w-2 h-2 rounded-full bg-success animate-pulse shrink-0"></div>
+              </h1>
+              <p className="text-[10px] text-dark-muted truncate">{t('chat.onlineStatus')}</p>
+            </div>
           </div>
         </div>
+
+        {/* Parameters Badge Row */}
+        {activeSessionId && sessions.find(s => s.id === activeSessionId) && (
+          <div className="flex items-center gap-2 mt-2 px-1 overflow-x-auto pb-1 no-scrollbar">
+            <div className="flex items-center gap-1.5 bg-pink-500/10 text-pink-500 px-2.5 py-1 rounded-full text-[10px] font-medium border border-pink-500/20 whitespace-nowrap">
+              <span>💖</span> <span>{t('chat.affection', 'Afeksi')}: {sessions.find(s => s.id === activeSessionId)?.affection}%</span>
+            </div>
+            <div className="flex items-center gap-1.5 bg-blue-500/10 text-blue-400 px-2.5 py-1 rounded-full text-[10px] font-medium border border-blue-500/20 whitespace-nowrap">
+              <span>🎭</span> <span>{t('chat.mood', 'Mood')}: {sessions.find(s => s.id === activeSessionId)?.latestMood}</span>
+            </div>
+            <div className="flex items-center gap-1.5 bg-amber-500/10 text-amber-500 px-2.5 py-1 rounded-full text-[10px] font-medium border border-amber-500/20 whitespace-nowrap">
+              <span>⭐</span> <span>{t('chat.trust', 'Kepercayaan')}: {sessions.find(s => s.id === activeSessionId)?.trust}%</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Messages Area */}
-      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center space-y-3 opacity-60">
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary-light mb-2">
@@ -406,11 +468,18 @@ export default function Chat() {
             >
               <div className={`flex max-w-[85%] gap-2 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                 {msg.role === 'assistant' && (
-                  <div className="w-8 h-8 shrink-0 rounded-full bg-dark-border flex items-center justify-center text-sm border border-primary/20 overflow-hidden mt-1">
-                    {selectedCharAvatarUrl ? (
+                  <div className="w-8 h-8 shrink-0 rounded-full bg-dark-border flex items-center justify-center text-sm border border-primary/20 overflow-hidden mt-1 relative group">
+                    {(msg.expression && msg.expression !== 'normal' && expressionUrls[msg.expression]) ? (
+                      <img src={expressionUrls[msg.expression]} alt={selectedChar.name} className="w-full h-full object-cover" />
+                    ) : selectedCharAvatarUrl ? (
                       <img src={selectedCharAvatarUrl} alt={selectedChar.name} className="w-full h-full object-cover" />
                     ) : (
                       selectedChar.avatar?.length <= 4 ? selectedChar.avatar : '🤖'
+                    )}
+                    {msg.parameters && Object.keys(msg.parameters).length > 0 && (
+                      <div className="absolute top-10 left-0 bg-dark-border/90 backdrop-blur-md rounded px-2 py-1 text-[8px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition shadow-lg pointer-events-none z-50">
+                        {msg.parameters.affectionDelta ? `${t('chat.affection', 'Afeksi')}: ${msg.parameters.affectionDelta > 0 ? '+' : ''}${msg.parameters.affectionDelta}` : ''}
+                      </div>
                     )}
                   </div>
                 )}
