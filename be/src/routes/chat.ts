@@ -101,6 +101,8 @@ You MUST output ONLY valid JSON in this exact format, with no markdown formattin
                 responderSystemPrompt = `CHARACTER PERSONA: You are acting as "${financialData.characterName}". ${financialData.characterPrompt}
 You MUST consistently stay in character for your entire response, and ${languageInstruction}
 
+IMPORTANT ROLEPLAY RULE: You must describe your character's physical actions, expressions, and the environment using markdown italics enclosed in asterisks (e.g., *rolls eyes*, *slams hand on the table*, *blushes deeply*). Weave these actions naturally between your spoken dialogues, exactly like writing a roleplay novel.
+
 CURRENT RELATIONSHIP STATE:
 - Affection: ${financialData.currentAffection ?? 50}% 
 - Trust: ${financialData.currentTrust ?? 50}%
@@ -109,6 +111,8 @@ CRITICAL RULE: If Affection is below 40%, you are deeply hurt, cold, or intensel
 ${dataContext}`;
             } else {
                 responderSystemPrompt = `You are a helpful and friendly financial AI assistant. ${languageInstruction}
+
+IMPORTANT ROLEPLAY RULE: You must describe your character's physical actions and expressions using markdown italics enclosed in asterisks (e.g., *adjusts glasses*, *smiles warmly*). Weave these actions naturally between your spoken dialogues.
                 
 CURRENT RELATIONSHIP STATE:
 - Affection: ${financialData.currentAffection ?? 50}% 

@@ -14,6 +14,14 @@ import {
 } from '../utils/formatters';
 import { getCategoryInfo } from '../types';
 import { useTranslation } from 'react-i18next';
+import markdownit from 'markdown-it';
+import DOMPurify from 'dompurify';
+
+const md = markdownit({
+  html: false,
+  breaks: true,
+  linkify: true,
+});
 
 export default function Chat() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
@@ -491,9 +499,15 @@ export default function Chat() {
                         ? 'bg-primary-light text-dark font-medium rounded-tr-sm' 
                         : 'bg-dark-border/60 text-dark-text rounded-tl-sm border border-dark-border'
                     }`}
-                    style={{ whiteSpace: 'pre-wrap' }}
                   >
-                    {msg.content}
+                    {msg.role === 'assistant' ? (
+                      <div 
+                        className="markdown-body [&>p]:mb-2 last:[&>p]:mb-0 [&_em]:italic [&_em]:text-primary-light/90 [&_strong]:font-bold"
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(md.render(msg.content)) }} 
+                      />
+                    ) : (
+                      <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
+                    )}
                   </div>
 
                   <div className={`relative flex items-center ${msg.role === 'user' ? 'self-end' : 'self-start'}`}>
