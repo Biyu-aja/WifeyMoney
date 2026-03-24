@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, AlertTriangle, Trash2, MessageCircle, Menu, Plus, X, List, RefreshCw, MoreVertical } from 'lucide-react';
-import type { Transaction } from '../types';
+import { Send, AlertTriangle, Trash2, MessageCircle, Menu, Plus, X, List, RefreshCw, MoreVertical, Wallet as WalletIcon, StopCircle, Edit2 } from 'lucide-react';
+import type { Transaction, Wallet } from '../types';
 import type { Character } from '../types/character';
 import { DEFAULT_CHARACTERS } from '../types/character';
 import { storage } from '../utils/storage';
-import { characterStorage } from '../utils/opfs';
+import { characterStorage, walletStorage } from '../utils/opfs';
 import { chatStorage, type ChatSession, type ChatMessage } from '../utils/chatStorage';
 import {
   getCurrentMonth,
@@ -35,13 +35,17 @@ export default function Chat() {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [wallets, setWallets] = useState<Wallet[]>([]);
   const [characters, setCharacters] = useState<Character[]>(DEFAULT_CHARACTERS);
   const [selectedCharId] = useState(characterStorage.getSelectedId());
   const [selectedCharAvatarUrl, setSelectedCharAvatarUrl] = useState<string | null>(null);
   const [expressionUrls, setExpressionUrls] = useState<Record<string, string>>({});
 
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const settings = storage.getSettings();
   const lang = settings.language || 'id';
@@ -50,6 +54,7 @@ export default function Chat() {
   useEffect(() => {
     loadSessions();
     setTransactions(storage.getTransactions());
+    walletStorage.getAll().then(setWallets);
     loadCharacters();
 
     const closeMenu = () => setOpenMenuId(null);
@@ -118,15 +123,11 @@ export default function Chat() {
     } else {
       endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-    // ensure no implicit window scroll
     window.scrollTo(0, 0);
   }, [messages]);
 
   const currentMonth = getCurrentMonth();
-  const monthTx = filterByMonth(transactions, currentMonth);
-  const expenses = monthTx.filter(t => t.type === 'expense');
-  const { income, expense, balance } = calculateSummary(monthTx);
-  const categoryTotals = getCategoryTotals(expenses);
+  const monthTxRaw = filterByMonth(transactions, currentMonth);
 
   const handleNewChat = async (isBudgeting: boolean = false) => {
     const newSession: ChatSession = {
@@ -161,6 +162,54 @@ export default function Chat() {
     }
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setInput(val);
+
+    const cursorPosition = e.target.selectionStart;
+    const textBeforeCursor = val.substring(0, cursorPosition);
+    
+    // Match only if @ is at start of string or after a space
+    const match = textBeforeCursor.match(/(?:^|\s)@(\w*)$/);
+    if (match) {
+       setMentionQuery(match[1].toLowerCase());
+    } else {
+       setMentionQuery(null);
+    }
+  };
+
+  const handleMentionSelect = (walletTag: string) => {
+    if (mentionQuery === null) return;
+    
+    const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+    const cursorPosition = textarea?.selectionStart || 0;
+    const textBeforeCursor = input.substring(0, cursorPosition);
+    const textAfterCursor = input.substring(cursorPosition);
+    
+    const newTextBefore = textBeforeCursor.replace(/@\w*$/, `@${walletTag} `);
+    const newValue = newTextBefore + textAfterCursor;
+    
+    setInput(newValue);
+    setMentionQuery(null);
+    
+    setTimeout(() => {
+      if (textarea) {
+        textarea.focus();
+        const newCursorPos = newTextBefore.length;
+        textarea.setSelectionRange(newCursorPos, newCursorPos);
+      }
+    }, 10);
+  };
+
+  const combinedWallets = [
+    { id: 'all', name: 'Semua Dompet', icon: '🌍', isMain: false, tag: 'semua', type: 'Sistem' },
+    ...wallets.map(w => ({ ...w, tag: w.name.replace(/\s+/g, '').toLowerCase(), type: 'Dompet' }))
+  ];
+
+  const suggestedWallets = mentionQuery !== null 
+    ? combinedWallets.filter(w => w.tag.includes(mentionQuery) || ('main'.includes(mentionQuery) && w.isMain))
+    : [];
+
   const handleSend = async () => {
     if (!input.trim() || loading) return;
     
@@ -185,6 +234,7 @@ export default function Chat() {
 
     const userInput = input.trim();
     setInput('');
+    setMentionQuery(null);
     await handleSendCore(userInput, currentSessionId, currentMessages);
   };
 
@@ -216,12 +266,52 @@ export default function Chat() {
     await callApi(updatedMessages, sessionId);
   };
 
+  const renderMessageContent = (content: string) => {
+      // Highlight @mentions in user messages
+      const urlRegex = /(@\w+)/g;
+      const parts = content.split(urlRegex);
+      return parts.map((part, i) => {
+          if (part.match(urlRegex)) {
+              return <span key={i} className="text-primary font-bold">{part}</span>;
+          }
+          return <span key={i}>{part}</span>;
+      });
+  };
+
   const callApi = async (messagesToSend: ChatMessage[], sessionId: string) => {
     setLoading(true);
     setError('');
 
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     try {
-      const recentTransactions = monthTx
+      const latestUserMsg = [...messagesToSend].reverse().find(m => m.role === 'user')?.content || '';
+      const mentionMatch = latestUserMsg.match(/@(\w+)/);
+      
+      let filteredTx = monthTxRaw;
+      let walletContextName = 'Semua Dompet';
+
+      if (mentionMatch) {
+         const mention = mentionMatch[1].toLowerCase();
+         if (mention === 'semua' || mention === 'all') {
+             // Keep filtering raw (all wallets)
+             filteredTx = monthTxRaw;
+             walletContextName = 'Semua Dompet';
+         } else {
+             const matchedWallet = wallets.find(w => w.name.toLowerCase().replace(/\s+/g, '') === mention || (mention === 'main' && w.isMain));
+             if (matchedWallet) {
+                 filteredTx = monthTxRaw.filter(t => t.walletId === matchedWallet.id || (!t.walletId && matchedWallet.isMain));
+                 walletContextName = matchedWallet.name;
+             }
+         }
+      }
+
+      const expenses = filteredTx.filter(t => t.type === 'expense');
+      const { income, expense, balance } = calculateSummary(filteredTx);
+      const categoryTotals = getCategoryTotals(expenses);
+
+      const recentTransactions = filteredTx
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
         .slice(0, 10)
         .map(t => ({ description: t.description, amount: t.amount, type: t.type, date: t.date, category: getCategoryInfo(t.category as any).label }));
@@ -239,12 +329,13 @@ export default function Chat() {
         balance,
         budgetUsedPercent,
         hasBudget,
+        walletContextName,
         topCategories: categoryTotals.slice(0, 5).map(c => ({
           category: getCategoryInfo(c.category as any).label,
           amount: c.amount,
           percent: Math.round((c.amount / expense) * 100),
         })),
-        transactionCount: monthTx.length,
+        transactionCount: filteredTx.length,
         avgDailyExpense: Math.round(expense / new Date().getDate()),
         characterName: selectedChar.name,
         characterPrompt: selectedChar.promptStyle,
@@ -266,6 +357,7 @@ export default function Chat() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
+        signal: controller.signal
       });
 
       if (!response.ok) throw new Error('Failed to call AI');
@@ -300,11 +392,42 @@ export default function Chat() {
         return finalMessages;
       });
 
-    } catch (err) {
-      console.error(err);
-      setError(t('chat.aiBusy') || 'AI was unable to reply. Please try again.');
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        console.log('Generation stopped by user');
+      } else {
+        console.error(err);
+        setError(t('chat.aiBusy') || 'AI was unable to reply. Please try again.');
+      }
     } finally {
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null;
+      }
       setLoading(false);
+    }
+  };
+
+  const handleStopGenerate = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+  };
+
+  const handleEditMessage = async (msgIndex: number, content: string) => {
+    if (!activeSessionId || loading) return;
+    
+    // Set text input to what the user wrote
+    setInput(content);
+    
+    // Delete this message and everything after it
+    const currentMessages = messages.slice(0, msgIndex);
+    setMessages(currentMessages);
+
+    const sessionToUpdate = sessions.find(s => s.id === activeSessionId);
+    if (sessionToUpdate) {
+      sessionToUpdate.messages = currentMessages;
+      await chatStorage.saveSession(sessionToUpdate);
+      await loadSessions();
     }
   };
 
@@ -465,7 +588,8 @@ export default function Chat() {
             </div>
             <p className="text-sm font-medium">{t('chat.emptyChat')}</p>
             <p className="text-xs text-dark-muted max-w-[250px]">
-              {t('chat.emptyChatDesc')}
+              {t('chat.emptyChatDesc')} <br />
+              💡 *Hint: Coba ketik @ buat mention dompet khusus!*
             </p>
           </div>
         ) : (
@@ -494,7 +618,7 @@ export default function Chat() {
                 
                 <div className={`flex flex-col gap-1 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                   <div 
-                    className={`p-3 rounded-2xl text-sm leading-relaxed relative ${
+                    className={`p-3 rounded-2xl text-[13px] leading-relaxed relative ${
                       msg.role === 'user' 
                         ? 'bg-primary-light text-dark font-medium rounded-tr-sm' 
                         : 'bg-dark-border/60 text-dark-text rounded-tl-sm border border-dark-border'
@@ -506,7 +630,9 @@ export default function Chat() {
                         dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(md.render(msg.content)) }} 
                       />
                     ) : (
-                      <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
+                      <div style={{ whiteSpace: 'pre-wrap' }}>
+                          {renderMessageContent(msg.content)}
+                      </div>
                     )}
                   </div>
 
@@ -523,7 +649,7 @@ export default function Chat() {
 
                       {openMenuId === msg.id && (
                          <div className={`absolute bottom-full mb-1 ${msg.role === 'user' ? 'right-0' : 'left-0'} flex items-center gap-1 bg-dark/90 backdrop-blur border border-dark-border rounded-lg p-1 shadow-lg z-10`}>
-                            {msg.role === 'assistant' && (
+                            {msg.role === 'assistant' ? (
                                <button 
                                  onClick={(e) => {
                                     e.stopPropagation();
@@ -533,6 +659,18 @@ export default function Chat() {
                                  title="Regenerate"
                                >
                                  <RefreshCw size={13} /> Regenerate
+                               </button>
+                            ) : (
+                               <button 
+                                 onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEditMessage(index, msg.content);
+                                    setOpenMenuId(null);
+                                 }} 
+                                 className="flex items-center gap-1.5 p-1.5 text-dark-muted hover:text-primary transition-colors rounded-md hover:bg-dark-border/50 whitespace-nowrap text-xs"
+                                 title="Edit"
+                               >
+                                 <Edit2 size={13} /> Edit
                                </button>
                             )}
                             <button 
@@ -584,28 +722,63 @@ export default function Chat() {
       </div>
 
       {/* Input Area */}
-      <div className="px-4 py-3 bg-dark/80 backdrop-blur-md border-t border-dark-border/50 pb-[max(env(safe-area-inset-bottom),20px)] mt-auto fixed bottom-0 left-0 right-0 w-full max-w-lg mx-auto z-40" style={{ bottom: '70px' }}>
-        <div className="flex items-end gap-2 bg-dark-border/40 rounded-3xl p-1.5 border border-dark-border/60 focus-within:border-primary/50 transition-colors">
+      <div className="px-4 py-3 bg-dark/80 backdrop-blur-md border-t border-dark-border/50 pb-[max(env(safe-area-inset-bottom),20px)] mt-auto fixed bottom-[70px] left-0 right-0 w-full max-w-lg mx-auto z-40">
+        
+        {/* Wallet Suggestion Box - VSCode Style */}
+        {mentionQuery !== null && suggestedWallets.length > 0 && (
+           <div className="absolute bottom-full left-4 right-4 mb-2 bg-[#1e1e1e] border border-[#333333] shadow-2xl rounded-xl overflow-hidden py-1.5 z-50 animate-fade-in flex flex-col max-h-[250px] overflow-y-auto no-scrollbar">
+             <div className="px-3 py-1.5 text-[10px] font-semibold text-dark-muted uppercase tracking-wider bg-[#1e1e1e]">
+               Pilih konteks AI
+             </div>
+             {suggestedWallets.map(w => (
+                <button
+                   key={w.id}
+                   onClick={() => handleMentionSelect(w.tag)}
+                   className="w-full text-left px-3 py-2 text-sm text-[#cccccc] hover:bg-[#094771] hover:text-white transition-colors flex items-center justify-between group"
+                >
+                   <div className="flex items-center gap-2.5">
+                       <span className="text-base group-hover:scale-110 transition-transform">{w.icon || <WalletIcon size={14} />}</span>
+                       <span className="font-medium text-[13px]">@{w.tag}</span>
+                   </div>
+                   <div className="flex flex-col items-end">
+                       <span className="text-[10px] text-dark-muted group-hover:text-white/70">{w.type}</span>
+                       <span className="text-[11px] text-dark-muted group-hover:text-white/90">{w.name}</span>
+                   </div>
+                </button>
+             ))}
+           </div>
+        )}
+
+        <div className="flex items-end gap-2 bg-dark-border/40 rounded-3xl p-1.5 border border-dark-border/60 focus-within:border-primary/50 transition-colors relative">
           <textarea
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={handleInputChange}
             onKeyDown={handleKeyPress}
-            placeholder={t('chat.inputPlaceholder')}
+            placeholder={t('chat.inputPlaceholder', 'Ada pertanyaan? Ketik @ buat filter dompet')}
             className="flex-1 bg-transparent border-none outline-none focus:outline-none focus:ring-0 focus:border-transparent focus:ring-transparent text-sm text-dark-text p-2.5 max-h-32 min-h-[44px] resize-none"
             rows={1}
             disabled={loading}
           />
-          <button
-            onClick={handleSend}
-            disabled={!input.trim() || loading}
-            className={`p-3 rounded-full shrink-0 transition-all ${
-              !input.trim() || loading
-                ? 'bg-dark-border text-dark-muted'
-                : 'bg-primary text-dark hover:bg-primary-light hover:scale-105 active:scale-95'
-            }`}
-          >
-            <Send size={18} className={input.trim() && !loading ? 'translate-x-px -translate-y-px' : ''} />
-          </button>
+          {loading ? (
+            <button
+              onClick={handleStopGenerate}
+              className="p-3 rounded-full shrink-0 transition-all bg-danger text-white hover:bg-danger/80 hover:scale-105 active:scale-95"
+            >
+              <StopCircle size={18} />
+            </button>
+          ) : (
+            <button
+              onClick={handleSend}
+              disabled={!input.trim()}
+              className={`p-3 rounded-full shrink-0 transition-all ${
+                !input.trim()
+                  ? 'bg-dark-border text-dark-muted'
+                  : 'bg-primary text-dark hover:bg-primary-light hover:scale-105 active:scale-95'
+              }`}
+            >
+              <Send size={18} className={input.trim() ? 'translate-x-px -translate-y-px' : ''} />
+            </button>
+          )}
         </div>
       </div>
     </div>

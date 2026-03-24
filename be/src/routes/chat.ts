@@ -21,6 +21,7 @@ interface FinancialData {
     currentAffection?: number;
     currentTrust?: number;
     currentMood?: string;
+    walletContextName?: string;
 }
 
 router.post('/', async (req: Request, res: Response): Promise<void> => {
@@ -61,7 +62,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
                 : '';
 
             dataContext = `
-Here is the financial data for the user named "${financialData.name}" this month:
+Here is the financial data for the user named "${financialData.name}" this month${financialData.walletContextName && financialData.walletContextName !== 'Semua Dompet' ? ` specifically for the wallet: "${financialData.walletContextName}"` : ' for all wallets combined'}:
 - Total income: Rp${financialData.totalIncome?.toLocaleString('id-ID')}
 - Total expenses: Rp${financialData.totalExpense?.toLocaleString('id-ID')}
 - Remaining balance: Rp${financialData.balance?.toLocaleString('id-ID')}
