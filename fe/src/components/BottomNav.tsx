@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, List, PieChart, Flame, Settings, MessageCircle } from 'lucide-react';
+import { LayoutDashboard, List, PieChart, Settings, MessageCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 const navItems = [
@@ -7,7 +7,6 @@ const navItems = [
   { to: '/transactions', icon: List, labelKey: 'nav.transactions' },
   { to: '/chat', icon: MessageCircle, labelKey: 'nav.chat' },
   { to: '/analytics', icon: PieChart, labelKey: 'nav.analytics' },
-  { to: '/roast', icon: Flame, labelKey: 'nav.roast' },
   { to: '/settings', icon: Settings, labelKey: 'nav.settings' },
 ];
 

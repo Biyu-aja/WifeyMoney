@@ -5,6 +5,8 @@ import type { Transaction, TransactionType, Category } from '../types';
 import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '../types';
 import CurrencyInput from './CurrencyInput';
 import { storage } from '../utils/storage';
+import { walletStorage } from '../utils/opfs';
+import type { Wallet } from '../types';
 import { useTranslation } from 'react-i18next';
 
 interface Props {
@@ -24,6 +26,8 @@ export default function TransactionForm({ isOpen, onClose, onSave, initialData }
   const [newCatName, setNewCatName] = useState('');
   const [newCatEmoji, setNewCatEmoji] = useState('✨');
   const [customCategories, setCustomCategories] = useState<any[]>([]);
+  const [wallets, setWallets] = useState<Wallet[]>([]);
+  const [walletId, setWalletId] = useState<string>('main');
 
   const { t } = useTranslation();
 
@@ -34,6 +38,15 @@ export default function TransactionForm({ isOpen, onClose, onSave, initialData }
   useEffect(() => {
     if (isOpen) {
       setCustomCategories(storage.getCustomCategories());
+      walletStorage.getAll().then(data => {
+        setWallets(data);
+        if (initialData?.walletId) {
+            setWalletId(initialData.walletId);
+        } else if (data.length > 0) {
+            setWalletId(data.find(w => w.isMain)?.id || data[0].id);
+        }
+      });
+
       if (initialData) {
         setType(initialData.type);
         setAmount(initialData.amount);
@@ -78,6 +91,7 @@ export default function TransactionForm({ isOpen, onClose, onSave, initialData }
       description: description || displayedCategories.find(c => c.value === category)?.label || '',
       date,
       createdAt: initialData?.createdAt || new Date().toISOString(),
+      walletId
     };
 
     onSave(transaction);
@@ -152,13 +166,35 @@ export default function TransactionForm({ isOpen, onClose, onSave, initialData }
             </button>
           </div>
 
-          {/* Amount */}
           <CurrencyInput
             label={t('txForm.amountLabel')}
             value={amount}
             onChange={setAmount}
             className="w-full bg-dark/50 border border-dark-border rounded-2xl px-4 py-4 text-2xl font-bold text-dark-text placeholder:text-dark-muted/40 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition"
           />
+
+          {/* Wallet */}
+          {wallets.length > 0 && (
+            <div>
+              <label className="text-xs text-dark-muted font-medium mb-2 block">{t('wallets.name', 'Dompet')}</label>
+              <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                {wallets.map(w => (
+                  <button
+                    key={w.id}
+                    onClick={() => setWalletId(w.id)}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl border whitespace-nowrap transition-all duration-200 ${
+                      walletId === w.id
+                        ? 'border-primary bg-primary/20 text-dark-text shadow-sm'
+                        : 'border-dark-border hover:border-dark-muted/50 bg-dark-card/50 text-dark-muted'
+                    }`}
+                  >
+                    <span>{w.icon}</span>
+                    <span className="text-sm font-semibold">{w.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Date */}
           <div>

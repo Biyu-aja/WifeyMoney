@@ -1,24 +1,27 @@
 import { useState, useEffect } from 'react';
-import { Plus, TrendingUp, TrendingDown, Wallet, ChevronRight } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, Wallet as WalletIcon, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import type { Transaction } from '../types';
+import { LineChart, Line, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import type { Transaction, Wallet } from '../types';
 import { storage } from '../utils/storage';
+import { walletStorage } from '../utils/opfs';
 import {
   formatCurrency,
   getCurrentMonth,
   getMonthLabel,
   filterByMonth,
   calculateSummary,
-  getDailySummaries,
   getPercentage,
 } from '../utils/formatters';
 import TransactionForm from '../components/TransactionForm';
 import TransactionCard from '../components/TransactionCard';
 import DashboardCharacter from '../components/DashboardCharacter';
 import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 
 export default function Dashboard() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [wallets, setWallets] = useState<Wallet[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [settings] = useState(storage.getSettings());
@@ -29,12 +32,12 @@ export default function Dashboard() {
 
   useEffect(() => {
     setTransactions(storage.getTransactions());
+    walletStorage.getAll().then(setWallets);
   }, []);
 
   const monthTransactions = filterByMonth(transactions, currentMonth);
   const { income, expense, balance } = calculateSummary(monthTransactions);
   const budgetUsed = getPercentage(expense, settings.monthlyBudget);
-  const dailySummaries = getDailySummaries(transactions, 7);
 
   const handleSave = (transaction: Transaction) => {
     let updated;
@@ -59,7 +62,25 @@ export default function Dashboard() {
   };
 
   const recentTransactions = transactions.slice(0, 5);
-  const maxDaily = Math.max(...dailySummaries.map(d => Math.max(d.income, d.expense)), 1);
+
+  // Chart Colors for Wallets
+  const COLORS = ['#818CF8', '#34D399', '#FBBF24', '#F472B6', '#A78BFA', '#60A5FA'];
+
+  // Prepare line chart data
+  const last7DaysChart = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    const dateStr = d.toISOString().split('T')[0];
+    const display = new Intl.DateTimeFormat(i18n.language === 'en' ? 'en-US' : 'id-ID', { weekday: 'short' }).format(d);
+    
+    const dayData: any = { name: display };
+    wallets.forEach(w => {
+      const wTxs = transactions.filter(t => (t.walletId === w.id || (!t.walletId && w.isMain)) && t.date <= dateStr);
+      const { balance } = calculateSummary(wTxs);
+      dayData[w.id] = balance;
+    });
+    return dayData;
+  });
 
   return (
     <div className="min-h-screen pb-24">
@@ -104,13 +125,35 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Wallets Breakdown */}
+      {wallets.length > 0 && (
+        <div className="px-5 mb-5 flex gap-3 overflow-x-auto no-scrollbar pb-2">
+          {wallets.map(w => {
+            const wTxs = transactions.filter(t => t.walletId === w.id || (!t.walletId && w.isMain));
+            const { balance: wBal } = calculateSummary(wTxs);
+            return (
+              <div key={w.id} className="min-w-[140px] bg-dark-card/50 rounded-2xl p-4 border border-dark-border/50 shrink-0 relative overflow-hidden group hover:border-primary/50 transition-colors">
+                <div className="absolute -right-6 -top-6 w-24 h-24 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-colors" />
+                <div className="flex items-center gap-2 mb-3 relative z-10">
+                  <div className="w-8 h-8 rounded-full bg-dark flex items-center justify-center text-sm shadow-inner">
+                    {w.icon}
+                  </div>
+                  <span className="font-semibold text-sm text-dark-text truncate">{w.name}</span>
+                </div>
+                <p className="font-display font-bold text-dark-text text-lg tracking-tight relative z-10">{formatCurrency(wBal)}</p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* Budget Progress */}
       {settings.useBudget !== false && (
         <div className="px-5 mb-5">
           <div className="gradient-card rounded-2xl p-4 border border-dark-border/50">
             <div className="flex justify-between items-center mb-2">
               <div className="flex items-center gap-2">
-                <Wallet size={16} className="text-primary-light" />
+                <WalletIcon size={16} className="text-primary-light" />
                 <span className="text-sm font-medium">{t('dashboard.monthlyBudget')}</span>
               </div>
               <span className={`text-xs font-bold ${budgetUsed > 80 ? 'text-danger' : budgetUsed > 50 ? 'text-warning' : 'text-success'}`}>
@@ -132,33 +175,58 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Mini Chart */}
-      <div className="px-5 mb-5">
-        <div className="gradient-card rounded-2xl p-4 border border-dark-border/50">
-          <h3 className="text-sm font-semibold mb-3">{t('dashboard.last7Days')}</h3>
-          <div className="flex items-end gap-1.5 h-20">
-            {dailySummaries.map((day, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                <div className="w-full flex flex-col gap-0.5 items-center" style={{ height: 60 }}>
-                  {day.expense > 0 && (
-                    <div
-                      className="w-full bg-danger/40 rounded-sm"
-                      style={{ height: `${(day.expense / maxDaily) * 60}px`, minHeight: day.expense > 0 ? 3 : 0 }}
+      {/* Wallet Trend Chart */}
+      {wallets.length > 0 && (
+        <div className="px-5 mb-5">
+          <div className="gradient-card rounded-2xl p-5 border border-dark-border/50 overflow-hidden relative">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-dark-text">{t('dashboard.last7Days')} - Tren Saldo</h3>
+            </div>
+            
+            <div className="h-44 w-full -ml-3">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={last7DaysChart}>
+                  <XAxis 
+                    dataKey="name" 
+                    tick={{ fontSize: 10, fill: '#6b7280' }} 
+                    tickLine={false} 
+                    axisLine={false}
+                    dy={10}
+                  />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '12px', fontSize: '12px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)' }}
+                    itemStyle={{ color: '#f8fafc', fontWeight: 600, paddingBottom: '2px' }}
+                    labelStyle={{ color: '#94a3b8', marginBottom: '4px' }}
+                    formatter={(value: any) => formatCurrency(value)}
+                  />
+                  {wallets.map((w, index) => (
+                    <Line 
+                      key={w.id}
+                      type="monotone" 
+                      dataKey={w.id} 
+                      name={w.name}
+                      stroke={COLORS[index % COLORS.length]} 
+                      strokeWidth={3}
+                      dot={false}
+                      activeDot={{ r: 5, strokeWidth: 0, fill: COLORS[index % COLORS.length] }}
+                      animationDuration={1500}
                     />
-                  )}
-                  {day.income > 0 && (
-                    <div
-                      className="w-full bg-success/40 rounded-sm"
-                      style={{ height: `${(day.income / maxDaily) * 60}px`, minHeight: day.income > 0 ? 3 : 0 }}
-                    />
-                  )}
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            {/* Custom chart legend below */}
+            <div className="flex flex-wrap items-center gap-3 mt-4">
+              {wallets.map((w, index) => (
+                <div key={w.id} className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                  <span className="text-[10px] text-dark-muted font-medium">{w.name}</span>
                 </div>
-                <span className="text-[9px] text-dark-muted">{day.date}</span>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Recent Transactions */}
       <div className="px-5">

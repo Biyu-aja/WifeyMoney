@@ -151,6 +151,19 @@ export default function Settings() {
           )}
         </div>
 
+        {/* Wallets */}
+        <div className="gradient-card rounded-2xl p-5 border border-dark-border/50 bg-dark/20 text-center cursor-pointer hover:bg-dark/30 transition-colors" onClick={() => navigate('/wallets')}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Wallet size={16} className="text-primary-light" />
+              <div>
+                <h3 className="text-sm font-semibold text-left">{t('settings.walletsTitle', 'Manajemen Dompet')}</h3>
+                <p className="text-xs text-dark-muted mt-1 text-left">{t('settings.walletsDesc', 'Atur dompet saldo dan e-wallet kamu.')}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Display Settings */}
         <div className="gradient-card rounded-2xl p-5 border border-dark-border/50 space-y-5">
           <div className="flex items-center justify-between">

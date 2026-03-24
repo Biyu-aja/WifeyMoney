@@ -3,10 +3,10 @@ import BottomNav from './components/BottomNav';
 import Dashboard from './pages/Dashboard';
 import Transactions from './pages/Transactions';
 import Analytics from './pages/Analytics';
-import RoastMe from './pages/RoastMe';
 import Settings from './pages/Settings';
 import CharacterCreator from './pages/CharacterCreator';
 import Chat from './pages/Chat';
+import Wallets from './pages/Wallets';
 
 export default function App() {
   return (
@@ -16,8 +16,8 @@ export default function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/transactions" element={<Transactions />} />
           <Route path="/analytics" element={<Analytics />} />
-          <Route path="/roast" element={<RoastMe />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/wallets" element={<Wallets />} />
           <Route path="/character-creator" element={<CharacterCreator />} />
           <Route path="/chat" element={<Chat />} />
         </Routes>

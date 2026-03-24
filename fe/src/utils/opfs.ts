@@ -1,5 +1,6 @@
 import type { Character } from '../types/character';
 import { DEFAULT_CHARACTERS } from '../types/character';
+import type { Wallet } from '../types';
 
 const DIR_NAME = 'wifey-characters';
 const META_FILE = 'characters.json';
@@ -150,3 +151,61 @@ export const characterStorage = {
         localStorage.removeItem('wifey_selected_character');
     },
 };
+
+const WALLET_DIR_NAME = 'wifey-wallets';
+const WALLET_META_FILE = 'wallets.json';
+
+const DEFAULT_WALLET: Wallet = {
+    id: 'main',
+    name: 'Dompet Utama',
+    icon: '💰',
+    isMain: true
+};
+
+async function getWalletDir() {
+    const root = await navigator.storage.getDirectory();
+    return root.getDirectoryHandle(WALLET_DIR_NAME, { create: true });
+}
+
+async function readWalletsFile(): Promise<Wallet[]> {
+    try {
+        const dir = await getWalletDir();
+        const fileHandle = await dir.getFileHandle(WALLET_META_FILE);
+        const file = await fileHandle.getFile();
+        const text = await file.text();
+        return JSON.parse(text);
+    } catch {
+        return [DEFAULT_WALLET];
+    }
+}
+
+async function writeWalletsFile(wallets: Wallet[]): Promise<void> {
+    const dir = await getWalletDir();
+    const fileHandle = await dir.getFileHandle(WALLET_META_FILE, { create: true });
+    const writable = await fileHandle.createWritable();
+    await writable.write(JSON.stringify(wallets));
+    await writable.close();
+}
+
+export const walletStorage = {
+    async getAll(): Promise<Wallet[]> {
+        return readWalletsFile();
+    },
+    async save(wallet: Wallet): Promise<void> {
+        const wallets = await readWalletsFile();
+        const idx = wallets.findIndex(w => w.id === wallet.id);
+        if (idx >= 0) {
+            wallets[idx] = wallet;
+        } else {
+            wallets.push(wallet);
+        }
+        await writeWalletsFile(wallets);
+    },
+    async delete(walletId: string): Promise<void> {
+        const wallets = await readWalletsFile();
+        if (wallets.length <= 1) throw new Error("Cannot delete last wallet");
+        const filtered = wallets.filter(w => w.id !== walletId);
+        await writeWalletsFile(filtered);
+    }
+};
+

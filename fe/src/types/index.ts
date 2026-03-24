@@ -17,6 +17,14 @@ export interface Transaction {
     description: string;
     date: string; // ISO string
     createdAt: string;
+    walletId?: string; // Optional for backward compatibility
+}
+
+export interface Wallet {
+    id: string;
+    name: string;
+    icon: string;
+    isMain?: boolean;
 }
 
 export interface MonthlyBudget {
