@@ -22,6 +22,8 @@ interface FinancialData {
     currentTrust?: number;
     currentMood?: string;
     walletContextName?: string;
+    wishlist?: { name: string; price: number; savedInWallet: string }[];
+    taggedWishlistItem?: { name: string; price: number; savedInWallet: string } | null;
 }
 
 router.post('/', async (req: Request, res: Response): Promise<void> => {
@@ -61,6 +63,14 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
                 }).join('\n')}`
                 : '';
 
+            const wishlistStr = financialData.wishlist && financialData.wishlist.length > 0
+                ? `\n\nWishlist / Dream Items (Stuff the user wants to save for):\n${financialData.wishlist.map(i => `- ${i.name} (Rp${i.price.toLocaleString('id-ID')}) using wallet: ${i.savedInWallet}`).join('\n')}`
+                : '';
+
+            const taggedWishlistStr = financialData.taggedWishlistItem 
+                ? `\n\nUSER SPECIFICALLY TAGGED THIS DREAM ITEM: "${financialData.taggedWishlistItem.name}" which costs Rp${financialData.taggedWishlistItem.price.toLocaleString('id-ID')} and is saved in wallet "${financialData.taggedWishlistItem.savedInWallet}". Talk about this specifically if it's the focus of their message.`
+                : '';
+
             dataContext = `
 Here is the financial data for the user named "${financialData.name}" this month${financialData.walletContextName && financialData.walletContextName !== 'Semua Dompet' ? ` specifically for the wallet: "${financialData.walletContextName}"` : ' for all wallets combined'}:
 - Total income: Rp${financialData.totalIncome?.toLocaleString('id-ID')}
@@ -71,7 +81,7 @@ ${financialData.hasBudget !== false
                     : `- Total Income Used: ${financialData.budgetUsedPercent}%`}
 
 Top expense categories:
-${topCatStr}${recentTxStr}
+${topCatStr}${recentTxStr}${wishlistStr}${taggedWishlistStr}
 `;
 
             evaluatorSystemPrompt = `You are a hidden financial behavioral analyst.

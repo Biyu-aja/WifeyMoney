@@ -56,9 +56,26 @@ const resources = {
                 home: 'Home',
                 transactions: 'Transaksi',
                 chat: 'Chat',
+                dreams: 'Impian',
                 analytics: 'Analitik',
                 roast: 'Roast',
                 settings: 'Setting'
+            },
+            dream: {
+                title: 'Barang Impian',
+                add: 'Tambah Barang Impian',
+                edit: 'Edit Barang Impian',
+                name: 'Nama Barang',
+                price: 'Harga Target',
+                wallet: 'Dompet Tabungan',
+                link: 'Link Produk (Opsional)',
+                buyConfirm: 'Apakah kamu sudah membeli {{name}}? \n\nIni akan membuat transaksi pengeluaran sebesar {{amount}}.',
+                deleteConfirm: 'Hapus barang impian ini?'
+            },
+            common: {
+                save: 'Simpan',
+                cancel: 'Batal',
+                deleteConfirm: 'Apakah kamu yakin ingin menghapus ini?'
             },
             dashboard: {
                 greeting: 'Halo, {{name}} 👋',
@@ -220,9 +237,26 @@ const resources = {
                 home: 'Home',
                 transactions: 'Transactions',
                 chat: 'Chat',
+                dreams: 'Dreams',
                 analytics: 'Analytics',
                 roast: 'Roast',
                 settings: 'Settings'
+            },
+            dream: {
+                title: 'Dream Items',
+                add: 'Add Dream Item',
+                edit: 'Edit Dream Item',
+                name: 'Item Name',
+                price: 'Target Price',
+                wallet: 'Savings Wallet',
+                link: 'Product Link (Optional)',
+                buyConfirm: 'Have you bought {{name}}? \n\nThis will create an expense transaction of {{amount}}.',
+                deleteConfirm: 'Delete this dream item?'
+            },
+            common: {
+                save: 'Save',
+                cancel: 'Cancel',
+                deleteConfirm: 'Are you sure you want to delete this?'
             },
             dashboard: {
                 greeting: 'Hello, {{name}} 👋',

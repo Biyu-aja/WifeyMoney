@@ -7,6 +7,8 @@ import Settings from './pages/Settings';
 import CharacterCreator from './pages/CharacterCreator';
 import Chat from './pages/Chat';
 import Wallets from './pages/Wallets';
+import DreamItems from './pages/DreamItems';
+import DreamItemFormPage from './pages/DreamItemFormPage';
 
 export default function App() {
   return (
@@ -15,6 +17,9 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/transactions" element={<Transactions />} />
+          <Route path="/dream-items" element={<DreamItems />} />
+          <Route path="/dream-items/add" element={<DreamItemFormPage />} />
+          <Route path="/dream-items/edit/:id" element={<DreamItemFormPage />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/wallets" element={<Wallets />} />

@@ -19,6 +19,7 @@ interface FinancialData {
     characterPrompt?: string;
     recentTransactions?: { description: string; amount: number; category: string; type?: string; date?: string }[];
     language?: string;
+    wishlist?: { name: string; price: number; savedInWallet: string }[];
 }
 
 function buildPrompt(data: FinancialData): string {
@@ -41,6 +42,10 @@ function buildPrompt(data: FinancialData): string {
         }).join('\n')}`
         : '';
 
+    const wishlistStr = data.wishlist && data.wishlist.length > 0
+        ? `\n\nWishlist / Dream Items (Stuff the user wants to buy/save for):\n${data.wishlist.map(i => `- ${i.name} (Rp${i.price.toLocaleString('id-ID')}) using wallet: ${i.savedInWallet}`).join('\n')}`
+        : '';
+
     return `${characterInstruction}
 
 Here is the financial data for the user named "${data.name}" this month:
@@ -54,7 +59,7 @@ ${data.hasBudget !== false
 - Average daily expense: Rp${data.avgDailyExpense.toLocaleString('id-ID')}
 
 Top expense categories:
-${topCatStr}${recentTxStr}
+${topCatStr}${recentTxStr}${wishlistStr}
 
 Your tasks:
 1. Provide a funny and entertaining commentary (3-5 sentences) about their financial habits. You MUST strictly follow your character's persona and speaking style! Use emojis. Make it personal and specific based on the numbers above. Do not use formal language!

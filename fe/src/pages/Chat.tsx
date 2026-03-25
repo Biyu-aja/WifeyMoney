@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, AlertTriangle, Trash2, MessageCircle, Menu, Plus, X, List, RefreshCw, MoreVertical, Wallet as WalletIcon, StopCircle, Edit2 } from 'lucide-react';
-import type { Transaction, Wallet } from '../types';
+import { Send, AlertTriangle, Trash2, MessageCircle, Menu, Plus, X, List, RefreshCw, MoreVertical, Wallet as WalletIcon, StopCircle, Edit2, ShoppingBag } from 'lucide-react';
+import type { Transaction, Wallet, DreamItem } from '../types';
 import type { Character } from '../types/character';
 import { DEFAULT_CHARACTERS } from '../types/character';
 import { storage } from '../utils/storage';
-import { characterStorage, walletStorage } from '../utils/opfs';
+import { characterStorage, walletStorage, dreamItemStorage } from '../utils/opfs';
 import { chatStorage, type ChatSession, type ChatMessage } from '../utils/chatStorage';
 import {
   getCurrentMonth,
@@ -42,6 +42,8 @@ export default function Chat() {
   const [expressionUrls, setExpressionUrls] = useState<Record<string, string>>({});
 
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [wishlistMentionQuery, setWishlistMentionQuery] = useState<string | null>(null);
+  const [dreamItems, setDreamItems] = useState<DreamItem[]>([]);
 
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -55,6 +57,7 @@ export default function Chat() {
     loadSessions();
     setTransactions(storage.getTransactions());
     walletStorage.getAll().then(setWallets);
+    dreamItemStorage.getAll().then(items => setDreamItems(items.filter(i => !i.isCompleted)));
     loadCharacters();
 
     const closeMenu = () => setOpenMenuId(null);
@@ -170,11 +173,21 @@ export default function Chat() {
     const textBeforeCursor = val.substring(0, cursorPosition);
     
     // Match only if @ is at start of string or after a space
-    const match = textBeforeCursor.match(/(?:^|\s)@(\w*)$/);
-    if (match) {
-       setMentionQuery(match[1].toLowerCase());
+    // Match wallet @
+    const walletMatch = textBeforeCursor.match(/(?:^|\s)@(\w*)$/);
+    if (walletMatch) {
+       setMentionQuery(walletMatch[1].toLowerCase());
+       setWishlistMentionQuery(null);
     } else {
        setMentionQuery(null);
+       
+       // Match wishlist #
+       const wishlistMatch = textBeforeCursor.match(/(?:^|\s)#(\w*)$/);
+       if (wishlistMatch) {
+          setWishlistMentionQuery(wishlistMatch[1].toLowerCase());
+       } else {
+          setWishlistMentionQuery(null);
+       }
     }
   };
 
@@ -201,6 +214,30 @@ export default function Chat() {
     }, 10);
   };
 
+  const handleWishlistSelect = (dreamName: string) => {
+    if (wishlistMentionQuery === null) return;
+    
+    const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+    const cursorPosition = textarea?.selectionStart || 0;
+    const textBeforeCursor = input.substring(0, cursorPosition);
+    const textAfterCursor = input.substring(cursorPosition);
+    
+    const tag = dreamName.replace(/\s+/g, '').toLowerCase();
+    const newTextBefore = textBeforeCursor.replace(/#\w*$/, `#${tag} `);
+    const newValue = newTextBefore + textAfterCursor;
+    
+    setInput(newValue);
+    setWishlistMentionQuery(null);
+    
+    setTimeout(() => {
+      if (textarea) {
+        textarea.focus();
+        const newCursorPos = newTextBefore.length;
+        textarea.setSelectionRange(newCursorPos, newCursorPos);
+      }
+    }, 10);
+  };
+
   const combinedWallets = [
     { id: 'all', name: 'Semua Dompet', icon: '🌍', isMain: false, tag: 'semua', type: 'Sistem' },
     ...wallets.map(w => ({ ...w, tag: w.name.replace(/\s+/g, '').toLowerCase(), type: 'Dompet' }))
@@ -208,6 +245,11 @@ export default function Chat() {
 
   const suggestedWallets = mentionQuery !== null 
     ? combinedWallets.filter(w => w.tag.includes(mentionQuery) || ('main'.includes(mentionQuery) && w.isMain))
+    : [];
+
+  const suggestedDreams = wishlistMentionQuery !== null
+    ? dreamItems.map(d => ({ ...d, tag: d.name.replace(/\s+/g, '').toLowerCase() }))
+                .filter(d => d.tag.includes(wishlistMentionQuery))
     : [];
 
   const handleSend = async () => {
@@ -266,17 +308,17 @@ export default function Chat() {
     await callApi(updatedMessages, sessionId);
   };
 
-  const renderMessageContent = (content: string) => {
-      // Highlight @mentions in user messages
-      const urlRegex = /(@\w+)/g;
-      const parts = content.split(urlRegex);
-      return parts.map((part, i) => {
-          if (part.match(urlRegex)) {
-              return <span key={i} className="text-primary font-bold">{part}</span>;
-          }
-          return <span key={i}>{part}</span>;
-      });
-  };
+    const renderMessageContent = (content: string) => {
+        // Highlight @mentions and #wishlist tags
+        const tagRegex = /((?:@|#)\w+)/g;
+        const parts = content.split(tagRegex);
+        return parts.map((part, i) => {
+            if (part.match(tagRegex)) {
+                return <span key={i} className="text-primary font-bold">{part}</span>;
+            }
+            return <span key={i}>{part}</span>;
+        });
+    };
 
   const callApi = async (messagesToSend: ChatMessage[], sessionId: string) => {
     setLoading(true);
@@ -286,11 +328,22 @@ export default function Chat() {
     abortControllerRef.current = controller;
 
     try {
+      const [allDreams] = await Promise.all([
+        dreamItemStorage.getAll()
+      ]);
+      const wishlistContext = allDreams.filter(i => !i.isCompleted).map(i => ({
+          name: i.name,
+          price: i.price,
+          savedInWallet: wallets.find(w => w.id === i.walletId)?.name || 'Unknown'
+      }));
+
       const latestUserMsg = [...messagesToSend].reverse().find(m => m.role === 'user')?.content || '';
       const mentionMatch = latestUserMsg.match(/@(\w+)/);
+      const wishlistTagMatch = latestUserMsg.match(/#(\w+)/);
       
       let filteredTx = monthTxRaw;
       let walletContextName = 'Semua Dompet';
+      let taggedWishlistItem = null;
 
       if (mentionMatch) {
          const mention = mentionMatch[1].toLowerCase();
@@ -305,6 +358,18 @@ export default function Chat() {
                  walletContextName = matchedWallet.name;
              }
          }
+      }
+
+      if (wishlistTagMatch) {
+          const tag = wishlistTagMatch[1].toLowerCase();
+          const matchedDream = allDreams.find(d => d.name.toLowerCase().replace(/\s+/g, '') === tag);
+          if (matchedDream) {
+              taggedWishlistItem = {
+                  name: matchedDream.name,
+                  price: matchedDream.price,
+                  savedInWallet: wallets.find(w => w.id === matchedDream.walletId)?.name || 'Unknown'
+              };
+          }
       }
 
       const expenses = filteredTx.filter(t => t.type === 'expense');
@@ -344,7 +409,9 @@ export default function Chat() {
         availableExpressions: selectedChar.expressions ? Object.keys(selectedChar.expressions) : ['normal'],
         currentAffection: sessions.find(s => s.id === sessionId)?.affection ?? 50,
         currentTrust: sessions.find(s => s.id === sessionId)?.trust ?? 50,
-        currentMood: sessions.find(s => s.id === sessionId)?.latestMood ?? 'Biasa'
+        currentMood: sessions.find(s => s.id === sessionId)?.latestMood ?? 'Biasa',
+        wishlist: wishlistContext,
+        taggedWishlistItem
       };
 
       const payload = {
@@ -749,12 +816,37 @@ export default function Chat() {
            </div>
         )}
 
+         {wishlistMentionQuery !== null && suggestedDreams.length > 0 && (
+            <div className="absolute bottom-full left-4 right-4 mb-2 bg-[#1e1e1e] border border-[#333333] shadow-2xl rounded-xl overflow-hidden py-1.5 z-50 animate-fade-in flex flex-col max-h-[250px] overflow-y-auto no-scrollbar">
+              <div className="px-3 py-1.5 text-[10px] font-semibold text-dark-muted uppercase tracking-wider bg-[#1e1e1e] flex items-center gap-2">
+                <ShoppingBag size={10} className="text-primary-light" />
+                Pilih Barang Impian
+              </div>
+              {suggestedDreams.map(d => (
+                 <button
+                    key={d.id}
+                    onClick={() => handleWishlistSelect(d.name)}
+                    className="w-full text-left px-3 py-2 text-sm text-[#cccccc] hover:bg-[#094771] hover:text-white transition-colors flex items-center justify-between group"
+                 >
+                    <div className="flex items-center gap-2.5">
+                        <ShoppingBag size={14} className="group-hover:scale-110 transition-transform text-primary-light" />
+                        <span className="font-medium text-[13px]">#{d.tag}</span>
+                    </div>
+                    <div className="flex flex-col items-end">
+                        <span className="text-[10px] text-dark-muted group-hover:text-white/70">WISH LIST</span>
+                        <span className="text-[11px] text-dark-muted group-hover:text-white/90">{d.name}</span>
+                    </div>
+                 </button>
+              ))}
+            </div>
+         )}
+
         <div className="flex items-end gap-2 bg-dark-border/40 rounded-3xl p-1.5 border border-dark-border/60 focus-within:border-primary/50 transition-colors relative">
           <textarea
             value={input}
             onChange={handleInputChange}
             onKeyDown={handleKeyPress}
-            placeholder={t('chat.inputPlaceholder', 'Ada pertanyaan? Ketik @ buat filter dompet')}
+            placeholder={t('chat.inputPlaceholder', 'Ada pertanyaan? Ketik @ dompet atau # impian')}
             className="flex-1 bg-transparent border-none outline-none focus:outline-none focus:ring-0 focus:border-transparent focus:ring-transparent text-sm text-dark-text p-2.5 max-h-32 min-h-[44px] resize-none"
             rows={1}
             disabled={loading}

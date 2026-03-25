@@ -1,13 +1,13 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, List, PieChart, Settings, MessageCircle } from 'lucide-react';
+import { LayoutDashboard, List, ShoppingBag, PieChart, MessageCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, labelKey: 'nav.home' },
   { to: '/transactions', icon: List, labelKey: 'nav.transactions' },
-  { to: '/chat', icon: MessageCircle, labelKey: 'nav.chat' },
+  { to: '/dream-items', icon: ShoppingBag, labelKey: 'nav.dreams' },
   { to: '/analytics', icon: PieChart, labelKey: 'nav.analytics' },
-  { to: '/settings', icon: Settings, labelKey: 'nav.settings' },
+  { to: '/chat', icon: MessageCircle, labelKey: 'nav.chat' },
 ];
 
 export default function BottomNav() {

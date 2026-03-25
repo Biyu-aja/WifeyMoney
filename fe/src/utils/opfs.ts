@@ -209,3 +209,89 @@ export const walletStorage = {
     }
 };
 
+const DREAM_DIR_NAME = 'wifey-dreams';
+const DREAM_META_FILE = 'dreams.json';
+
+import type { DreamItem } from '../types';
+
+async function getDreamDir() {
+    const root = await navigator.storage.getDirectory();
+    return root.getDirectoryHandle(DREAM_DIR_NAME, { create: true });
+}
+
+async function readDreamsFile(): Promise<DreamItem[]> {
+    try {
+        const dir = await getDreamDir();
+        const fileHandle = await dir.getFileHandle(DREAM_META_FILE);
+        const file = await fileHandle.getFile();
+        const text = await file.text();
+        return JSON.parse(text);
+    } catch {
+        return [];
+    }
+}
+
+async function writeDreamsFile(dreams: DreamItem[]): Promise<void> {
+    const dir = await getDreamDir();
+    const fileHandle = await dir.getFileHandle(DREAM_META_FILE, { create: true });
+    const writable = await fileHandle.createWritable();
+    await writable.write(JSON.stringify(dreams));
+    await writable.close();
+}
+
+export const dreamItemStorage = {
+    async getAll(): Promise<DreamItem[]> {
+        return readDreamsFile();
+    },
+    async getById(id: string): Promise<DreamItem | null> {
+        const items = await readDreamsFile();
+        return items.find(i => i.id === id) || null;
+    },
+    async save(item: DreamItem, imageFile?: File): Promise<void> {
+        if (imageFile) {
+            const fileName = await this.saveImage(item.id, imageFile);
+            item.image = fileName;
+        }
+        const items = await readDreamsFile();
+        const idx = items.findIndex(i => i.id === item.id);
+        if (idx >= 0) {
+            items[idx] = { ...items[idx], ...item };
+        } else {
+            items.push(item);
+        }
+        await writeDreamsFile(items);
+    },
+    async delete(itemId: string): Promise<void> {
+        const items = await readDreamsFile();
+        const filtered = items.filter(i => i.id !== itemId);
+        await writeDreamsFile(filtered);
+    },
+    async saveImage(itemId: string, file: File): Promise<string> {
+        const dir = await getDreamDir();
+        const imagesDir = await dir.getDirectoryHandle('images', { create: true });
+        const ext = file.name.split('.').pop() || 'png';
+        const fileName = `${itemId}.${ext}`;
+        const fileHandle = await imagesDir.getFileHandle(fileName, { create: true });
+        const writable = await fileHandle.createWritable();
+        await writable.write(file);
+        await writable.close();
+        return fileName;
+    },
+    async loadImage(fileName: string): Promise<string | null> {
+        try {
+            const dir = await getDreamDir();
+            const imagesDir = await dir.getDirectoryHandle('images');
+            const fileHandle = await imagesDir.getFileHandle(fileName);
+            const file = await fileHandle.getFile();
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result as string);
+                reader.onerror = () => resolve(null);
+                reader.readAsDataURL(file);
+            });
+        } catch {
+            return null;
+        }
+    }
+};
+

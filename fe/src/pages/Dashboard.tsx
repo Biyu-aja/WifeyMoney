@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, TrendingUp, TrendingDown, Wallet as WalletIcon, ChevronRight } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, Wallet as WalletIcon, ChevronRight, Settings as SettingsIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import type { Transaction, Wallet } from '../types';
@@ -85,9 +85,17 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen pb-24">
       {/* Header */}
-      <div className="px-5 pt-6 pb-4">
-        <p className="text-dark-muted text-sm">{t('dashboard.greeting', { name: settings.name })}</p>
-        <h1 className="text-xl font-display font-bold mt-1">WifeyMoney</h1>
+      <div className="px-5 pt-6 pb-4 flex justify-between items-center">
+        <div>
+          <p className="text-dark-muted text-sm">{t('dashboard.greeting', { name: settings.name })}</p>
+          <h1 className="text-xl font-display font-bold mt-1">WifeyMoney</h1>
+        </div>
+        <button 
+          onClick={() => navigate('/settings')}
+          className="w-10 h-10 rounded-2xl bg-dark-card border border-dark-border flex items-center justify-center text-dark-muted hover:text-dark-text transition-colors active:scale-95"
+        >
+          <SettingsIcon size={20} />
+        </button>
       </div>
 
       {/* Balance Card */}

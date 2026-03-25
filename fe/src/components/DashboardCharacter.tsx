@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { RefreshCw } from 'lucide-react';
-import type { Character } from '../types/character';
-import { characterStorage } from '../utils/opfs';
+import { characterStorage, dreamItemStorage, walletStorage } from '../utils/opfs';
 import { storage } from '../utils/storage';
 import { calculateSummary, filterByMonth, getCurrentMonth } from '../utils/formatters';
 import { getCategoryInfo } from '../types';
+import type { Character } from '../types/character';
 
 export default function DashboardCharacter() {
   const [character, setCharacter] = useState<Character | null>(null);
@@ -49,6 +49,16 @@ export default function DashboardCharacter() {
     setLoading(true);
 
     try {
+        const [allDreams, wallets] = await Promise.all([
+            dreamItemStorage.getAll(),
+            walletStorage.getAll()
+        ]);
+        const wishlist = allDreams.filter(i => !i.isCompleted).map(i => ({
+            name: i.name,
+            price: i.price,
+            savedInWallet: wallets.find(w => w.id === i.walletId)?.name || 'Unknown'
+        }));
+
         const transactions = storage.getTransactions();
         const settings = storage.getSettings();
         const currentMonth = getCurrentMonth();
@@ -79,6 +89,7 @@ export default function DashboardCharacter() {
             availableExpressions: ['normal', ...Object.keys(character.expressions || {})],
             recentTransactions,
             language: settings.language || 'id',
+            wishlist
         };
 
         const apiUrl = import.meta.env.VITE_API_URL || '';

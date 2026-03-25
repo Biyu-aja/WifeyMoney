@@ -20,6 +20,17 @@ export interface Transaction {
     walletId?: string; // Optional for backward compatibility
 }
 
+export interface DreamItem {
+    id: string;
+    name: string;
+    price: number;
+    walletId: string; // The wallet used for this dream item
+    link?: string;
+    image?: string; // OPFS filename
+    createdAt: string;
+    isCompleted: boolean;
+}
+
 export interface Wallet {
     id: string;
     name: string;

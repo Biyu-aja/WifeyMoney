@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import type { Transaction, Wallet as WalletType } from '../types';
 import { getCategoryInfo } from '../types';
 import { storage } from '../utils/storage';
-import { characterStorage, walletStorage } from '../utils/opfs';
+import { characterStorage, walletStorage, dreamItemStorage } from '../utils/opfs';
 import type { Character } from '../types/character';
 import { DEFAULT_CHARACTERS } from '../types/character';
 import {
@@ -126,6 +126,15 @@ export default function Analytics() {
     setRoastResult(null);
 
     try {
+        const [allDreams] = await Promise.all([
+          dreamItemStorage.getAll()
+        ]);
+        const wishlist = allDreams.filter(i => !i.isCompleted).map(i => ({
+            name: i.name,
+            price: i.price,
+            savedInWallet: wallets.find(w => w.id === i.walletId)?.name || 'Unknown'
+        }));
+
         const recentTransactions = monthTx
           .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
           .slice(0, 5)
@@ -156,6 +165,7 @@ export default function Analytics() {
         characterPrompt: selectedChar.promptStyle,
         recentTransactions,
         language: settings.language || 'id',
+        wishlist
       };
 
       const apiUrl = import.meta.env.VITE_API_URL || '';

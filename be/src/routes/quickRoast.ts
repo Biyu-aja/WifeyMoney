@@ -16,6 +16,7 @@ interface FinancialData {
     availableExpressions?: string[];
     recentTransactions?: { description: string; amount: number; category: string; type?: string; date?: string }[];
     language?: string;
+    wishlist?: { name: string; price: number; savedInWallet: string }[];
 }
 
 function buildPrompt(data: FinancialData): string {
@@ -34,6 +35,10 @@ function buildPrompt(data: FinancialData): string {
         }).join('\n')}`
         : '';
 
+    const wishlistStr = data.wishlist && data.wishlist.length > 0
+        ? `\nWishlist / Dream Items (Stuff the user wants to buy):\n${data.wishlist.map(i => `- ${i.name} (Rp${i.price.toLocaleString('id-ID')})`).join('\n')}`
+        : '';
+
     return `${characterInstruction}
 
 User data:
@@ -42,7 +47,7 @@ User data:
 - Balance: Rp${data.balance.toLocaleString('id-ID')}
 ${data.hasBudget !== false
             ? `- Total Monthly Budget Setting: Rp${data.monthlyBudget.toLocaleString('id-ID')}\n- Preset Budget Used: ${data.budgetUsedPercent}%`
-            : `- Income Used: ${data.budgetUsedPercent}% (User does not use a strict budget)`}${recentTxStr}
+            : `- Income Used: ${data.budgetUsedPercent}% (User does not use a strict budget)`}${recentTxStr}${wishlistStr}
 
 Your tasks:
 1. Provide a funny, entertaining, and short commentary (MAX 1 - 2 sentences) about their recent transactions or financial habits. You MUST strictly follow your character's persona. Do not use formal language.
